@@ -22,14 +22,12 @@
   justify-content: center;
 } */
 
-
 /**
  * CSS files with the .module.css suffix will be treated as CSS modules
  * and scoped locally.
  */
 
- 
- .figs {
+.figs {
   /* padding: 4rem 0; */
   text-align: center;
   position: relative;
@@ -46,17 +44,12 @@
 }
 
 .heroBanner {
-  padding: 4rem 0;
   text-align: center;
   position: relative;
   overflow: hidden;
 }
 
 @media screen and (max-width: 996px) {
-  .heroBanner {
-    padding: 2rem;
-  }
-
   .chad {
     padding: 2rem;
   }

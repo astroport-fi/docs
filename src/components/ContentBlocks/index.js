@@ -2,7 +2,6 @@ import React from 'react';
 import clsx from 'clsx';
 import styles from './styles.module.css';
 import ContentBox from './ContentBox';
-import LaunchUrl from '../../../static/img/launch.png';
 
 const contentBoxProps = {
   overview: {
@@ -34,9 +33,6 @@ export default function ContentBlocks({ banner, image, title, text, footer }) {
   } else if (title == 'Learn') {
     return (
       <div>
-        <div className={styles.figs}>
-          <img src={image} />
-        </div>
         <h2 className={styles.title}>{title}</h2>
         <p className={styles.text}>{text}</p>
         <ContentBox title={contentBoxProps.learn.title} />
@@ -62,10 +58,6 @@ export default function ContentBlocks({ banner, image, title, text, footer }) {
         <h2 className={styles.title}>{title}</h2>
         <p className={styles.text}>{text}</p>
         <ContentBox title={contentBoxProps.develop.title} />
-
-        <div className={styles.footer}>
-          <img src={LaunchUrl} />
-        </div>
       </div>
     );
   }

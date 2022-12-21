@@ -73,7 +73,6 @@ const contentBlockProps = {
     footer: false,
   },
   learn: {
-    banner: true,
     image: BannerUrl,
     title: 'Learn',
     text: 'Today, the doors of Astroport’s governing body, the Astral Assembly, open. And that means all astronauts can enter to help shape the future of Terra 2.0’s most popular swap protocol.',
@@ -101,7 +100,7 @@ export default function Home() {
   return (
     <Layout>
       <RadialGradient />
-      <div className="relative z-10">
+      <div className="relative z-10 py-8 lg:py-12">
         <HomepageHeader />
         <main>{/* <HomepageFeatures /> */}</main>
 
