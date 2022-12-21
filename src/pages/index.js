@@ -5,16 +5,19 @@ import clsx from 'clsx';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
 // import HomepageFeatures from '@site/src/components/HomepageFeatures';
-import RadialGradient from '../components/RadialGradient';
 import BannerUrl from '@site/static/img/banner.png';
 import ChadUrl from '@site/static/img/astrochad.png';
 // import PepeUrl from '@site/static/img/astropepe.png';
 import AssemblyUrl from '@site/static/img/assembly.png';
 // import SearchBar from '@theme/SearchBar';
-import ContentBlocks from '../components/ContentBlocks';
 import * as animationHero from '@site/static/hero.json';
 
 import styles from './index.module.css';
+
+import RadialGradient from '../components/RadialGradient';
+import ContentBlocks from '../components/ContentBlocks';
+import AstroChad from '../components/AstroChad';
+import Satellites from '../components/Satellites';
 
 // function HomepageHeader() {
 //   const {siteConfig} = useDocusaurusContext();
@@ -64,33 +67,6 @@ function HomepageHeader() {
   );
 }
 
-const contentBlockProps = {
-  overview: {
-    image: BannerUrl,
-    title: 'Getting Started',
-    text: 'Today, the doors of Astroport’s governing body, the Astral Assembly, open. And that means all astronauts can enter to help shape the future of Terra 2.0’s most popular swap protocol.',
-    footer: false,
-  },
-  learn: {
-    image: BannerUrl,
-    title: 'Learn',
-    text: 'Today, the doors of Astroport’s governing body, the Astral Assembly, open. And that means all astronauts can enter to help shape the future of Terra 2.0’s most popular swap protocol.',
-    footer: false,
-  },
-  govern: {
-    image: AssemblyUrl,
-    title: 'Govern',
-    text: 'Today, the doors of Astroport’s governing body, the Astral Assembly, open. And that means all astronauts can enter to help shape the future of Terra 2.0’s most popular swap protocol.',
-    footer: false,
-  },
-  develop: {
-    image: ChadUrl,
-    title: 'Develop',
-    text: 'Today, the doors of Astroport’s governing body, the Astral Assembly, open. And that means all astronauts can enter to help shape the future of Terra 2.0’s most popular swap protocol.',
-    footer: true,
-  },
-};
-
 export default function Home() {
   // const { siteConfig } = useDocusaurusContext();
 
@@ -100,15 +76,6 @@ export default function Home() {
       <div className="relative z-10 py-8 lg:py-12">
         <HomepageHeader />
         <main>{/* <HomepageFeatures /> */}</main>
-
-        {/* <ContentBlocks 
-        banner={contentBlockProps.overview.banner}
-        image={contentBlockProps.overview.image}
-        title={contentBlockProps.overview.title}
-        text={contentBlockProps.overview.text}
-        footer={contentBlockProps.overview.footer}
-
-      /> */}
 
         {/* 
       <div className={styles.pepe}>
@@ -121,28 +88,25 @@ export default function Home() {
         </div>
 
         <ContentBlocks
-          title={contentBlockProps.learn.title}
-          text={contentBlockProps.learn.text}
-          footer={contentBlockProps.learn.footer}
+          title="Learn"
+          text="Today, the doors of Astroport’s governing body, the Astral Assembly, open. And that means all astronauts can enter to help shape the future of Terra 2.0’s most popular swap protocol."
         />
-
         <ContentBlocks
-          image={contentBlockProps.govern.image}
-          title={contentBlockProps.govern.title}
-          text={contentBlockProps.govern.text}
-          footer={contentBlockProps.govern.footer}
-        />
-
-        {/* <div className={styles.figs}>
-        <img src={ChadUrl} />
-      </div> */}
-
+          title="Govern"
+          text="Today, the doors of Astroport’s governing body, the Astral Assembly, open. And that means all astronauts can enter to help shape the future of Terra 2.0’s most popular swap protocol."
+        >
+          <div className="max-w-[600px] w-full mx-auto aspect-square">
+            <Satellites />
+          </div>
+        </ContentBlocks>
         <ContentBlocks
-          image={contentBlockProps.develop.image}
-          title={contentBlockProps.develop.title}
-          text={contentBlockProps.develop.text}
-          footer={contentBlockProps.develop.footer}
-        />
+          title="Develop"
+          text="Today, the doors of Astroport’s governing body, the Astral Assembly, open. And that means all astronauts can enter to help shape the future of Terra 2.0’s most popular swap protocol."
+        >
+          <div className="max-w-[600px] w-full mx-auto aspect-square">
+            <AstroChad />
+          </div>
+        </ContentBlocks>
       </div>
     </Layout>
   );
