@@ -66,7 +66,6 @@ function HomepageHeader() {
 
 const contentBlockProps = {
   overview: {
-    banner: true,
     image: BannerUrl,
     title: 'Getting Started',
     text: 'Today, the doors of Astroport’s governing body, the Astral Assembly, open. And that means all astronauts can enter to help shape the future of Terra 2.0’s most popular swap protocol.',
@@ -79,14 +78,12 @@ const contentBlockProps = {
     footer: false,
   },
   govern: {
-    banner: false,
     image: AssemblyUrl,
     title: 'Govern',
     text: 'Today, the doors of Astroport’s governing body, the Astral Assembly, open. And that means all astronauts can enter to help shape the future of Terra 2.0’s most popular swap protocol.',
     footer: false,
   },
   develop: {
-    banner: false,
     image: ChadUrl,
     title: 'Develop',
     text: 'Today, the doors of Astroport’s governing body, the Astral Assembly, open. And that means all astronauts can enter to help shape the future of Terra 2.0’s most popular swap protocol.',
@@ -124,14 +121,12 @@ export default function Home() {
         </div>
 
         <ContentBlocks
-          banner={contentBlockProps.learn.banner}
           title={contentBlockProps.learn.title}
           text={contentBlockProps.learn.text}
           footer={contentBlockProps.learn.footer}
         />
 
         <ContentBlocks
-          banner={contentBlockProps.govern.banner}
           image={contentBlockProps.govern.image}
           title={contentBlockProps.govern.title}
           text={contentBlockProps.govern.text}
@@ -143,7 +138,6 @@ export default function Home() {
       </div> */}
 
         <ContentBlocks
-          banner={contentBlockProps.develop.banner}
           image={contentBlockProps.develop.image}
           title={contentBlockProps.develop.title}
           text={contentBlockProps.develop.text}
