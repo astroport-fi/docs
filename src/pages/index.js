@@ -1,4 +1,5 @@
 import React from 'react';
+import Lottie from 'lottie-react';
 import clsx from 'clsx';
 // import Link from '@docusaurus/Link';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
@@ -11,6 +12,7 @@ import ChadUrl from '@site/static/img/astrochad.png';
 import AssemblyUrl from '@site/static/img/assembly.png';
 // import SearchBar from '@theme/SearchBar';
 import ContentBlocks from '../components/ContentBlocks';
+import * as animationHero from '@site/static/hero.json';
 
 import styles from './index.module.css';
 
@@ -117,9 +119,13 @@ export default function Home() {
         <img src={PepeUrl} />
       </div> */}
 
+        {/* <img src="/img/banner.png" /> */}
+        <div className="max-w-xl w-full mx-auto">
+          <Lottie animationData={animationHero} />
+        </div>
+
         <ContentBlocks
           banner={contentBlockProps.learn.banner}
-          image={contentBlockProps.learn.image}
           title={contentBlockProps.learn.title}
           text={contentBlockProps.learn.text}
           footer={contentBlockProps.learn.footer}
