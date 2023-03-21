@@ -275,12 +275,6 @@ ul {
   width: fit-content;
 }
 
-.container.padding-top--md.padding-bottom--lg {
-  max-width: 1600px;
-  padding-right: 2rem;
-  padding-left: 2rem;
-}
-
 .table-of-contents.table-of-contents__left-border li {
   width: fit-content;
   margin-right: 0px !important;
