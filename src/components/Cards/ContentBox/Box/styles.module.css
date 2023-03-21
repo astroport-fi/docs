@@ -1,12 +1,7 @@
 .box {
   display: flex;
-  height: 136px;
-
-  /* height: 136px;
-  width: 364px; */
-
-  /* height: 252px;
-  width: 547.3px; */
+  min-height: 140px;
+  height: 100%;
 
   background: rgba(255, 255, 255, 0.05);
   /* backgroundblur */
@@ -15,6 +10,8 @@
   /* Note: backdrop-filter has minimal browser support */
 
   border-radius: 16px;
+  padding: 12px;
+  gap: 16px;
 }
 
 .box:hover {
@@ -75,16 +72,10 @@ ul.list li:hover {
 }
 
 .fig {
-  margin-top: 8%;
-  margin-left: 4%;
   opacity: 0.4;
-  width: 76px;
-  height: 76px;
-}
-
-.text {
-  margin-top: 4%;
-  margin-left: 4%;
+  width: 60px;
+  height: 60px;
+  flex-shrink: 0;
 }
 
 .subtext {
@@ -129,8 +120,6 @@ ul.list li:before {
   text-decoration: none !important;
 } */
 
-
-
 @media only screen and (max-width: 500px) {
   .box {
     background-color: rgba(255, 255, 255, 0.07);
@@ -141,7 +130,7 @@ ul.list li:before {
   }
 
   .title {
-    color:rgba(255, 255, 255, 1);
+    color: rgba(255, 255, 255, 1);
   }
 
   .box .titleBanner {
@@ -157,7 +146,6 @@ ul.list li:before {
     /* font-weight: bold; */
   }
 
-    
   .links {
     color: rgba(255, 255, 255, 0.6);
   }
@@ -174,7 +162,7 @@ ul.list li:before {
     border-right: 2px solid rgba(255, 255, 255, 0.6);
     border-bottom: 2px solid rgba(255, 255, 255, 0.6);
   }
-  
+
   .box:hover ul.list li:before {
     border-right: 2px solid rgba(255, 255, 255, 0.6);
     border-bottom: 2px solid rgba(255, 255, 255, 0.6);

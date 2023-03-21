@@ -1,7 +1,7 @@
-import React from 'react';
-import clsx from 'clsx';
-import styles from './styles.module.css';
-import IntroUrl from '../../../../../static/img/intro.png';
+import React from "react";
+import clsx from "clsx";
+import styles from "./styles.module.css";
+import IntroUrl from "../../../../../static/img/intro.png";
 
 // export default function Box(props) {
 
@@ -9,7 +9,7 @@ import IntroUrl from '../../../../../static/img/intro.png';
 //       <div className={styles.box}>
 
 //         <div className={styles.fig}>
-//           <img src={props.image} />
+//           <img src={props.image} className="w-full" />
 //         </div>
 
 //         <div className={styles.text}>
@@ -27,11 +27,10 @@ import IntroUrl from '../../../../../static/img/intro.png';
 // }
 
 export default function Box(props) {
-
   return (
     <div className={styles.box}>
       <div className={styles.fig}>
-        <img src={props.image} />
+        <img src={props.image} className="w-full" />
       </div>
 
       <div className={styles.text}>
@@ -60,13 +59,11 @@ export default function Box(props) {
     </div>
   );
 
-
-  
   // if (props.list == 'Astro Pools') {
   //   return (
   //     <div className={styles.box}>
   //       <div className={styles.fig}>
-  //         <img src={props.image} />
+  //         <img src={props.image} className="w-full" />
   //       </div>
 
   //       <div className={styles.text}>
@@ -98,7 +95,7 @@ export default function Box(props) {
   //   return (
   //     <div className={styles.box}>
   //       <div className={styles.fig}>
-  //         <img src={props.image} />
+  //         <img src={props.image} className="w-full" />
   //       </div>
 
   //       <div className={styles.text}>
@@ -135,12 +132,12 @@ export default function Box(props) {
   //         </ul> */}
   //       </div>
   //     </div>
-  //   );  
+  //   );
   // } else if (props.list == 'Tutorials') {
   //   return (
   //     <div className={styles.box}>
   //       <div className={styles.fig}>
-  //         <img src={props.image} />
+  //         <img src={props.image} className="w-full" />
   //       </div>
 
   //       <div className={styles.text}>
@@ -154,14 +151,12 @@ export default function Box(props) {
   //     </div>
   //   );
   // }
-  
-  
-  
+
   // else if (props.list == 'Astro Generators') {
   //   return (
   //     <div className={styles.box}>
   //       <div className={styles.fig}>
-  //         <img src={props.image} />
+  //         <img src={props.image} className="w-full" />
   //       </div>
 
   //       <div className={styles.text}>
@@ -178,7 +173,7 @@ export default function Box(props) {
   //   return (
   //     <div className={styles.box}>
   //       <div className={styles.fig}>
-  //         <img src={props.image} />
+  //         <img src={props.image} className="w-full" />
   //       </div>
 
   //       <div className={styles.text}>
@@ -201,7 +196,7 @@ export default function Box(props) {
   //   return (
   //     <div className={styles.box}>
   //       <div className={styles.fig}>
-  //         <img src={props.image} />
+  //         <img src={props.image} className="w-full" />
   //       </div>
 
   //       <div className={styles.text}>
@@ -242,7 +237,7 @@ export default function Box(props) {
   //   return (
   //     <div className={styles.box}>
   //       <div className={styles.fig}>
-  //         <img src={props.image} />
+  //         <img src={props.image} className="w-full" />
   //       </div>
 
   //       <div className={styles.text}>
@@ -259,7 +254,7 @@ export default function Box(props) {
   //   return (
   //     <div className={styles.box}>
   //       <div className={styles.fig}>
-  //         <img src={props.image} />
+  //         <img src={props.image} className="w-full" />
   //       </div>
 
   //       <div className={styles.text}>
@@ -276,7 +271,7 @@ export default function Box(props) {
   //   return (
   //     <div className={styles.box}>
   //       <div className={styles.fig}>
-  //         <img src={props.image} />
+  //         <img src={props.image} className="w-full" />
   //       </div>
 
   //       <div className={styles.text}>
@@ -317,7 +312,7 @@ export default function Box(props) {
   //   return (
   //     <div className={styles.box}>
   //       <div className={styles.fig}>
-  //         <img src={props.image} />
+  //         <img src={props.image} className="w-full" />
   //       </div>
 
   //       <div className={styles.text}>
@@ -358,7 +353,7 @@ export default function Box(props) {
   //   return (
   //     <div className={styles.box}>
   //       <div className={styles.fig}>
-  //         <img src={props.image} />
+  //         <img src={props.image} className="w-full" />
   //       </div>
 
   //       <div className={styles.text}>
