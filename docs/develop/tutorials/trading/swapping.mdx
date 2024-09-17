@@ -200,6 +200,7 @@ Performs a native swap in a given pool.
 
         ```js 
         const astrolunaAddress = "terra1udsua9w6jljwxwgwsegvt6v657rg3ayfvemupnes7lrggd28s0wq7g8azm";
+        const offeredlunaAmount = "100000"
         let beliefPrice;
 
         const simulation = await lcd.wasm.contractQuery(
@@ -212,13 +213,13 @@ Performs a native swap in a given pool.
                   "denom": "uluna"
                 }
               },
-              "amount": "100000"
+              "amount": offeredlunaAmount
             }
           }
         }
         ).then(result => { beliefPrice = result.return_amount });
 
-        beliefPrice = String(beliefPrice * 1000000);
+        beliefPrice = (beliefPrice / offeredlunaAmount).toFixed(18);
         ```
         ---
 
