@@ -78,7 +78,7 @@ During the tuning process, the contract queries snapshotted votes per pool at th
 ```
 X = 'config.pools_per_outpost' * number of outposts
 ```
-* config.pools_per_outpost is a constant set by governance (initially 5)
+* config.pools_per_outpost is a constant set by governance (initially 5, currently 7)
 
 The contract distributes ASTRO to the selected pools based on their percentage share of **total voting power of selected pools** from the previous step. Based on whether the outpost is the Hub or remote Astroport deployment, the contract sends ASTRO along with an executable message to the Astroport Incentives contract, or IBC Hook to remote Emissions Controller, respectively.
 
