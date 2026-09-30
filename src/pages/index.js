@@ -1,6 +1,6 @@
 import React from "react";
-import Lottie from "lottie-react";
 import clsx from "clsx";
+import BrowserOnly from "@docusaurus/BrowserOnly";
 // import Link from '@docusaurus/Link';
 import useDocusaurusContext from "@docusaurus/useDocusaurusContext";
 import Layout from "@theme/Layout";
@@ -67,7 +67,12 @@ export default function Home() {
         {/* <img src="/img/banner.png" /> */}
         <div className="flex flex-col gap-y-10 px-4 w-full mx-auto">
           <div className="max-w-xl w-full mx-auto">
-            <Lottie animationData={animationHero} />
+            <BrowserOnly>
+              {() => {
+                const Lottie = require("lottie-react").default;
+                return <Lottie animationData={animationHero} />;
+              }}
+            </BrowserOnly>
           </div>
 
           <div>
