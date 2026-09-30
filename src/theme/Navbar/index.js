@@ -8,17 +8,6 @@ import MediumIcon from "../../components/icons/MediumIcon";
 import TelegramIcon from "../../components/icons/TelegramIcon";
 import { APP_URL, SOCIAL_MEDIA_LINKS } from "../../constants";
 
-const NavigationItems = () => {
-  return (
-    <div className="flex gap-x-9">
-      <a href="https://blog.astroport.fi/">Blog</a>
-      {/* <a>Community</a> */}
-      <a href="../../">Docs</a>
-      <a href="https://forum.astroport.fi/">Forum</a>
-    </div>
-  );
-};
-
 const iconsClassNames =
   "h-7 hover:text-indigo-300 cursor-pointer transition-all duration-200 block";
 
@@ -49,7 +38,6 @@ export default function NavbarWrapper(props) {
           <img src="/img/logo.svg" alt="logo" />
         </Link>
         <div className="flex gap-16 items-center">
-          <NavigationItems />
           <SocialIcons />
           <button
             className="uppercase rounded-2xl bg-primary py-2 px-6 text-[13px] font-medium text-white hover:bg-white hover:text-primary transition-all duration-500 cursor-pointer"

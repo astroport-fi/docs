@@ -285,7 +285,7 @@ const config = {
               },
               {
                 label: "Discord",
-                href: "https://discord.com/invite/astroport",
+                href: "https://discord.astroport.fi",
               },
               {
                 label: "Forum",
