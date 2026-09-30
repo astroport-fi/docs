@@ -287,10 +287,6 @@ const config = {
                 label: "Discord",
                 href: "https://discord.astroport.fi",
               },
-              {
-                label: "Forum",
-                href: "https://forum.astroport.fi/",
-              },
             ],
           },
           {
