@@ -14,7 +14,13 @@ import ProvideLiquidity9Url from '@site/static/img/web-app-tutorials/farmers-fie
 import ProvideLiquidity10Url from '@site/static/img/web-app-tutorials/farmers-fields/provide-liquidity/10.png';
 import ProvideLiquidity11Url from '@site/static/img/web-app-tutorials/farmers-fields/provide-liquidity/11.png';
 
+import Admonition from '@theme/Admonition'
+
 # Providing/Withdrawing Liquidity
+
+<Admonition type="info" title="Withdraw-only pools">
+Six Neutron pools (dATOM/USDC, NTRN/USDC, dATOM/ATOM, USDC/DYDX, wstETH/WETH and axlUSDC/USDC) are withdraw-only after the September 2026 incident. You can't provide liquidity to them or swap through them, but LPs can withdraw. Withdrawals from these pools are balanced only: you receive your share of every asset in the pool. If your LP tokens are staked, unstake them first. See [Long-Term Support](../../long-term-support#september-2026-neutron-incident-and-recovery).
+</Admonition>
 
 ## Providing Liquidity 
 
@@ -54,6 +60,8 @@ You will be prompted to sign and confirm the transaction using a compatible wall
 
 Once your liquidity has been deposited, you should see the pair appear in the main pools page with a "Manage" tab. From here, you can provide, withdraw, stake, or unstake your liquidity and corresponding LP tokens. 
 
+To earn a pool's incentives, stake your LP tokens in the Incentives contract (see [Staking/Unstaking LP Tokens](./staking-unstaking-lp-tokens)).
+
 
 ## Withdrawing Liquidity 
 
@@ -61,7 +69,7 @@ Once your liquidity has been deposited, you should see the pair appear in the ma
 
 <img src={ProvideLiquidity8Url} style={{ paddingBottom: 10 }} />
 
-Select the "Manage" tab next to the pair you'd like to withdraw liquidity for. This will promp a pop-up menu. Select "Withdraw Liquidity" to advance.
+Select the "Manage" tab next to the pair you'd like to withdraw liquidity for. This will prompt a pop-up menu. Select "Withdraw Liquidity" to advance. If your LP tokens are staked, unstake them first.
 
 ### Step 2: Withdraw Liquidity
 

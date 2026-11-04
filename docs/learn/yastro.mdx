@@ -1,0 +1,77 @@
+---
+sidebar_position: 3
+---
+
+import Admonition from '@theme/Admonition'
+
+# yASTRO
+
+## Overview
+
+yASTRO is staked ASTRO on Terra. Stake ASTRO and you get the same amount of yASTRO, 1:1. Each week a quarter of the fees Astroport earns on Terra goes to yASTRO holders, paid in USDC.inj.
+
+- **Chain:** Terra (phoenix-1) only.
+- **App:** [app.astroport.fi/yastro](https://app.astroport.fi/yastro)
+- **Contract:** [terra1fe8uj96z7f4jfsnkrdxhchxdhdtx8alr9zjqze76hm2ga6tpxjjq5rdjw7](https://terrasco.pe/mainnet/address/terra1fe8uj96z7f4jfsnkrdxhchxdhdtx8alr9zjqze76hm2ga6tpxjjq5rdjw7). The contract is both the staking contract and the yASTRO token (a CW20).
+- **Stake:** ASTRO on Terra (`ibc/8D8A7F7253615E5F76CB6252A1E1BD921D5EDB7BBAAF8913FB1C77FF125D9995`, the IBC ASTRO from Neutron).
+- **Rewards:** USDC.inj (`ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B`).
+- **Unbonding:** 7 days.
+
+yASTRO has no governance role. Astroport governance is retired (see [Long-Term Support](./long-term-support)).
+
+<Admonition type="info" title="yASTRO is not xASTRO">
+xASTRO (the old staking token on Neutron and Terra) is retired and has no value. Pre-incident xASTRO holders were paid in ASTRO at 1.3402 ASTRO per xASTRO. yASTRO is a new, separate token on Terra.
+</Admonition>
+
+## Where the rewards come from
+
+Pools send part of their trading fees to the Terra Maker. Every week the Maker converts these fees into USDC.inj and deposits 25% of them into yASTRO. The rest buys ASTRO to be burned (25%) and funds the Terra Development Fund (50%). See [Where fees go](./long-term-support#where-fees-go).
+
+Rewards stream, they aren't paid as a lump sum:
+
+- Astroport weeks start on Monday 00:00 UTC. Everything deposited during a week is paid out per second over the following week.
+- The Maker deposits on Sunday night, so each week's fees start streaming at Monday 00:00 UTC.
+- Rewards are shared pro rata to the yASTRO each address holds, second by second. Holding yASTRO for a minute earns a minute of rewards, so there's nothing to gain from buying just before a deposit.
+- If nobody holds yASTRO for part of a week, the amount streamed during that time is queued and streamed again the next week.
+
+## Stake ASTRO
+
+1. Get ASTRO on Terra. ASTRO on Terra is the IBC ASTRO denom above. The legacy ASTRO CW20 on Terra can't be staked, and converting it to IBC ASTRO no longer works.
+2. Go to [app.astroport.fi/yastro](https://app.astroport.fi/yastro) and connect a Terra wallet.
+3. Enter the amount of ASTRO to stake and confirm the transaction in your wallet.
+
+You receive yASTRO 1:1 and start earning from that second.
+
+## Claim rewards
+
+Your rewards build up as you hold yASTRO and are never sent automatically. Claim them at any time from the **Rewards Center** in the app. Claiming doesn't affect your stake.
+
+## Unstake and withdraw
+
+Unstaking (unbonding) takes 7 days:
+
+1. On [app.astroport.fi/yastro](https://app.astroport.fi/yastro), enter the amount of yASTRO to unstake and confirm. Your yASTRO is burned and the same amount of ASTRO starts unbonding.
+2. Unbonding ASTRO earns nothing.
+3. After 7 days the ASTRO is ready. Withdraw it in the app to send it to your wallet.
+
+Rewards you earned before unstaking stay claimable.
+
+## yASTRO in pools
+
+yASTRO is transferable, and rewards follow whoever holds it. A pool that holds yASTRO (for example a yASTRO pair) earns rewards like any other holder.
+
+Those rewards can be passed on to the pool's LPs: anyone can trigger a forward of the pool's yASTRO rewards to Astroport Incentives, where they are paid out to the LPs who have **staked** their LP tokens in Incentives. This only happens once at least 1% of the pool's LP supply is staked in Incentives; until then the rewards wait in yASTRO. LPs who don't stake their LP tokens get none of these rewards. From a weekly Maker deposit to an LP being fully paid takes two to three weeks.
+
+See [Staking/Unstaking LP Tokens](./workstation/farmers-fields/staking-unstaking-lp-tokens).
+
+## Things to know
+
+- yASTRO is a CW20 token on Terra. Don't send it over IBC: the bridge escrow would hold it and earn its rewards instead of you.
+- If you hold yASTRO through another contract (a vault, a staking module, an escrow), that contract earns the rewards and must claim and pass them on.
+- Don't send ASTRO or USDC.inj to the yASTRO contract with a plain bank transfer. It can't be recovered. Use the app.
+- The contract owner (the Terra satellite, run by the Contributors DAO) can change the reward tokens, the unbonding period (up to 28 days, for new unbondings only) and the pool forwarding settings. It can't move staked ASTRO or anyone's rewards.
+
+## Links
+
+- [yASTRO contract reference](/docs/develop/smart-contracts/tokenomics/yastro)
+- [Contract addresses](/docs/develop/smart-contracts/contract-addresses)

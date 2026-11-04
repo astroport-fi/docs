@@ -8,514 +8,333 @@ import Admonition from '@theme/Admonition'
 
 ## Overview
 
-There are some cases where liquidity between a pair may be low or not exist and you need to perform a multi-hop swap between two or more pairs. The [`Router` contract ](../../smart-contracts/router) enables multi-hop swap operations for Cosmos native and CW20 tokens. Swaps execute one-by-one and the last swap will return the ask token. 
+When there is no pool for the pair you want, or a better price is available through another asset, the [Router](/docs/develop/smart-contracts/router) swaps through several pools in one transaction. Hops execute one after the other; the last hop sends the ask asset to you.
 
-The initial swap will contain the offer token which determines how the contract message gets proccessed by the `Router` contract. If the offer token is a native token, we can send an `ExecuteMsg` to the `Router` contract directly. Otherwise (if it's a CW20 token), we will need to encode our message within a `Cw20ExecuteMsg` that gets sent from the address of the token we are swapping. 
+Two router versions are live on each chain. **Router 2.0 is the recommended one** and is what this page documents.
+
+| Chain | Router 2.0.0 (recommended) | Router 1.3.1 |
+| ----- | -------------------------- | ------------ |
+| Terra | `terra1txm8xcy8mete9e5zh5ktqr4jm4cq4ja8djttg3zkqll64x4ksq7qknaesf` | `terra18plp90j0zd596zt3zdsf0w9vvk5ukwlwzwkksxv9mdu8rscat9sqndk5qz` |
+| Neutron | `neutron1xuh7nqt486gkvkxdwt773fzs5uptxy0ylzehm3spq7rx8r2kaspqzu0hv6` | `neutron1rwj6mfxzzrwskur73v326xwuff52vygqk73lr7azkehnfzz5f5wskwekf4` |
+
+What changed in Router 2.0:
+
+- **`pool_swap` hops.** Besides `astro_swap` (the factory looks up the pool for the asset pair), a hop can name the pool by address. This lets a route use pools the factory doesn't know about, such as the USDC transmuter on Terra.
+- **`minimum_receive` is required** and must be greater than zero. It is the only price check: the pools' own spread checks are turned off on every hop, and there is no `max_spread` parameter.
+- **Nested routes are refused.** A route can't start while another route is running (`A swap route is already in progress`).
+- A route has at most 50 hops, and each hop's offer asset must be the previous hop's ask asset.
+
+Router 1.x keeps its old API (`astro_swap` and `native_swap` hops, optional `minimum_receive` and `max_spread`) and can't be migrated to 2.x. Existing integrations keep working; new integrations should use 2.0.
+
+## Swap Operations
+
+A route is a list of `SwapOperation` values.
+
+`astro_swap` swaps in the factory's pool for this asset pair:
+
+```json
+{
+  "astro_swap": {
+    "offer_asset_info": {
+      "native_token": {
+        "denom": "uluna"
+      }
+    },
+    "ask_asset_info": {
+      "native_token": {
+        "denom": "ibc/2C962DAB9F57FE0921435426AE75196009FAA1981BF86991203C8411F8980FDB"
+      }
+    }
+  }
+}
+```
+
+`pool_swap` swaps in the pool at `pool_addr`. The router checks that the pool's `pair` query reports this address and both assets:
+
+```json
+{
+  "pool_swap": {
+    "pool_addr": "terra1p3sea2vjewtr9ap4hv7nc75k5jc852ftf0w5u06wsk420y5urc9s9xtxdj",
+    "offer_asset_info": {
+      "native_token": {
+        "denom": "ibc/2C962DAB9F57FE0921435426AE75196009FAA1981BF86991203C8411F8980FDB"
+      }
+    },
+    "ask_asset_info": {
+      "native_token": {
+        "denom": "ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B"
+      }
+    }
+  }
+}
+```
+
+<Admonition type="caution" title="Only route through pools you trust">
+
+`pool_swap` accepts any address. The `pair` check catches mistyped routes, but it can't prove that a contract is a genuine Astroport pool. Build `pool_swap` hops only from pools you have verified, for example from the [Contract Addresses](/docs/develop/smart-contracts/contract-addresses) page or the factory's `pairs` query.
+
+</Admonition>
+
+## Example Route
+
+The examples below swap 10 LUNA into USDC.inj on Terra in two hops:
+
+1. LUNA to USDC (Noble) in the LUNA/USDC pool, found by the factory (`astro_swap`).
+2. USDC (Noble) to USDC.inj in the USDC transmuter, given by address (`pool_swap`).
+
+| Asset | Denom on Terra |
+| ----- | -------------- |
+| LUNA | `uluna` |
+| USDC (Noble) | `ibc/2C962DAB9F57FE0921435426AE75196009FAA1981BF86991203C8411F8980FDB` |
+| USDC.inj | `ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B` |
+| USDC transmuter (pool) | `terra1p3sea2vjewtr9ap4hv7nc75k5jc852ftf0w5u06wsk420y5urc9s9xtxdj` |
+
+A Neutron route has the same shape. For example NTRN to USDC through ASTRO uses two `astro_swap` hops, `untrn` to `factory/neutron1ffus553eet978k024lmssw0czsxwr97mggyv85lpcsdkft8v9ufsz3sa07/astro` and then ASTRO to `ibc/B559A80D62249C8AA07A380E2A2BEA6E5CA9A6F079C912C3A9E9B494105E4F81` (USDC), sent to the Neutron Router 2.0.
+
+## Simulating a Route
+
+`simulate_swap_operations` takes the offer amount (in base units) and the same operations you will execute:
+
+```json
+{
+  "simulate_swap_operations": {
+    "offer_amount": "10000000",
+    "operations": [
+      {
+        "astro_swap": {
+          "offer_asset_info": {
+            "native_token": {
+              "denom": "uluna"
+            }
+          },
+          "ask_asset_info": {
+            "native_token": {
+              "denom": "ibc/2C962DAB9F57FE0921435426AE75196009FAA1981BF86991203C8411F8980FDB"
+            }
+          }
+        }
+      },
+      {
+        "pool_swap": {
+          "pool_addr": "terra1p3sea2vjewtr9ap4hv7nc75k5jc852ftf0w5u06wsk420y5urc9s9xtxdj",
+          "offer_asset_info": {
+            "native_token": {
+              "denom": "ibc/2C962DAB9F57FE0921435426AE75196009FAA1981BF86991203C8411F8980FDB"
+            }
+          },
+          "ask_asset_info": {
+            "native_token": {
+              "denom": "ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B"
+            }
+          }
+        }
+      }
+    ]
+  }
+}
+```
+
+The response is the amount of the last ask asset you would receive, in base units:
+
+```json
+{
+  "amount": "394395"
+}
+```
+
+`reverse_simulate_swap_operations` answers the opposite question: it takes `ask_amount` and the operations and returns the offer amount needed, as a plain string (for example `"25377928"`).
+
+## Setting `minimum_receive`
+
+`minimum_receive` is the least amount of the final ask asset, in base units, that the recipient must receive. After the last hop the router compares the recipient's balance before and after the route and reverts the whole transaction if the difference is smaller.
+
+Take your expected output and subtract the slippage you accept. With the simulation above and 1% slippage:
+
+```text
+expected        = 394395                      (0.394395 USDC.inj)
+minimum_receive = 394395 * 99 / 100 = 390451  (rounded down)
+```
+
+<Admonition type="caution" title="minimum_receive is your only protection">
+
+Router 2.0 disables the pools' own spread checks, so a route with `"minimum_receive": "1"` is accepted but protects almost nothing. Set it from a price you trust. A simulation taken just before the swap protects you against the price moving between query and execution; a quote you computed independently also protects you against a pool whose price was already moved.
+
+</Admonition>
 
 ## Native Routing
 
-Use when the initial offer asset is a Cosmos native token.
+When the first offer asset is a native token, call `execute_swap_operations` on the router and attach the offer amount as funds.
 
-<CH.Section>
-    <CH.Scrollycoding>
-
-        ### `execute_swap_operations`
-
-        To create a native multi-hop swap, you need to execute a contract message pointing to the `execute_swap_operations` endpoint in the [`Router`](../../smart-contracts/router) contract
-
-        `operations` is the only required parameter and holds information regarding each swap stored in a vector containing objects of type [`SwapOperation`](../../smart-contracts/router#swapoperation).
-
-        <Admonition type="info" title="NOTE">
-            [`SwapOperation`](../../smart-contracts/router#swapoperation) is a helper enum that filters between `astro_swaps` and `native_swaps`. The former gets processed as swaps through Astroport's liquidity pools and the latter gets swapped natively (only between native assets). 
-
-            This should not be confused with [Native Routing](#nativerouting). Our initial offer asset in this section is still a native asset despite our swap being an `astro_swap`. As an `astro_swap`, we are simply swapping between a native and CW20 token through an Astroport liquidity pool.
-        </Admonition>
-
-        ```json focus=1:32,36:37
-        {
-          "execute_swap_operations": {
-            "operations": [
-              {
-                "astro_swap": {
-                  "offer_asset_info": {
-                    "native_token": {
-                      "denom": "uluna"
-                    }
-                  },
-                  "ask_asset_info": {
-                    "token": {
-                      "contract_addr": usdcAddress
-                    }
-                  }
-                }
-              }, 
-              {
-                "astro_swap": {
-                  "offer_asset_info": {
-                    "token": {
-                      "contract_addr": usdcAddress
-                    }
-                  },
-                  "ask_asset_info": {
-                    "token": {
-                      "contract_addr": zeroAddress
-                    }
-                  }
-                }
-              }
-            ], 
-            "minimum_receive": beliefPrice,
-            "max_spread": "0.005", 
-            "to": "..."
-          }
-        }
-        ```
-
-        ---
-
-        #### `Coins`
-
-        Since our initial offer token is a native asset, we need to send the native token along with the transaction message.
-
-        The code in this section is an example of what a complete swap message may look like using [feather.js](../network/terra-2#featherjs) to send Coins with our transaction.
-
-        ```js focus=1:40,44:59
-        // testnet contract addresses
-        const routerAddress = 'terra1na348k6rvwxje9jj6ftpsapfeyaejxjeq6tuzdmzysps20l6z23smnlv64';
-        const usdcAddress = 'terra14m3gtr8072t0hsefclfn50w4tdcphn66hvcu8qqf9wmtjyc9uasszqckyc'
-        const zeroAddress = 'terra1juvel8n8tn3m3tnkq779nktrk7hf9t2kprx7wzs7jlz0gcaqrmqq6rlre5'
-
-        const nativeRouterSwap = new MsgExecuteContract(
-        wallet.key.accAddress('terra'),
-        routerAddress,
-        {
-          "execute_swap_operations": {
-            "operations": [
-              {
-                "astro_swap": {
-                  "offer_asset_info": {
-                    "native_token": {
-                      "denom": "uluna"
-                    }
-                  },
-                  "ask_asset_info": {
-                    "token": {
-                      "contract_addr": usdcAddress
-                    }
-                  }
-                }
-              }, 
-              {
-                "astro_swap": {
-                  "offer_asset_info": {
-                    "token": {
-                      "contract_addr": usdcAddress
-                    }
-                  },
-                  "ask_asset_info": {
-                    "token": {
-                      "contract_addr": zeroAddress
-                    }
-                  }
-                }
-              }
-            ], 
-            "minimum_receive": beliefPrice,
-            "max_spread": "0.005", 
-            "to": "..."
-          }
-        }, 
-        new Coins({ "uluna": "100000" })
-        )
-
-        const fee = new Fee(2000000, { uluna: 200000 });
-
-        // // BROADCAST TRANSACTION
-        const tx = await wallet.createAndSignTx({
-          msgs: [nativeRouterSwap],
-          fee,
-          chainID: 'pisco-1',
-        });
-
-        const result = await lcd.tx.broadcast(tx, 'pisco-1');
-
-        console.log(result);
-        ```
-
-        ---
-
-        ### Optional Parameters
-
-        The `execute_swap_operations` endpoint takes in the following optional parameters:
-
-        - `minimum_receive`: Minimum expected return amount
-        - `max_spread`: The difference between the ask amount before and after the swap. If the swap spread exceeds the provided max limit, the swap will fail.
-        - `to`: Address receiving tokens (if different from sender)
-
-        ```json focus=33:35
-        {
-          "execute_swap_operations": {
-            "operations": [
-              {
-                "astro_swap": {
-                  "offer_asset_info": {
-                    "native_token": {
-                      "denom": "uluna"
-                    }
-                  },
-                  "ask_asset_info": {
-                    "token": {
-                      "contract_addr": usdcAddress
-                    }
-                  }
-                }
-              }, 
-              {
-                "astro_swap": {
-                  "offer_asset_info": {
-                    "token": {
-                      "contract_addr": usdcAddress
-                    }
-                  },
-                  "ask_asset_info": {
-                    "token": {
-                      "contract_addr": zeroAddress
-                    }
-                  }
-                }
-              }
-            ], 
-            "minimum_receive": beliefPrice,
-            "max_spread": "0.005",
-            "to": "..."
-          }
-        }
-        ```
-        ---
-
-        #### `minimum_receive` + `max_spread`
-
-        If `minimum_receive` is provided in combination with `max_spread`, the pool will check the difference between the return amount (using `belief_price`) and the real pool price.
-
-        `minimum_receive` +/- the `max_spread` is the range of possible acceptable prices for this swap.
-
-        ```json focus=33:34
-        ```
-
-        ---
-
-        ### Calculating `minimum_receive`
-
-        Astroport's native solution to obtain `minimum_receive` is to query the [`simulate_swap_operations`](../../smart-contracts/router#simulate_swap_operations) endpoint from the [`Router`](../../smart-contracts/router) contract and to pass the result of this query into the swap message. 
-
-        ```json focus=33
-        ```
-
-        ---
-
-        #### `simulate_swap_operations`
-
-        The [`simulate_swap_operations`](../../smart-contracts/router#simulate_swap_operations) endpoint takes in two parameters: 
-
-        - `offer_amount`: The amount of tokens to swap
-        - `operations`: The swap operations to perform
-
-        The `operations` parameter takes in the same vector of [`SwapOperation`](../../smart-contracts/router#swapoperation) objects that our swap message contains. 
-
-        ```js
-        {
-          "simulate_swap_operations": {
-            "offer_amount": "100000",
-            "operations": [
-              {
-                "astro_swap": {
-                  "offer_asset_info": {
-                    "native_token": {
-                      "denom": "uluna"
-                    }
-                  },
-                  "ask_asset_info": {
-                    "token": {
-                      "contract_addr": usdcAddress
-                    }
-                  }
-                }
-              }, 
-              {
-                "astro_swap": {
-                  "offer_asset_info": {
-                    "token": {
-                      "contract_addr": usdcAddress
-                    }
-                  },
-                  "ask_asset_info": {
-                    "token": {
-                      "contract_addr": zeroAddress
-                    }
-                  }
-                }
-              }
-            ]
-          }
-        }
-        ```
-        ---
-
-        {/* #### Example Implementation
-
-        ```js
-        let beliefPrice;
-
-        const simulation = await lcd.wasm.contractQuery(
-        routerAddress, 
-        {
-            "simulate_swap_operations": {
-                "offer_amount": "100000",
-                "operations": [
-                    {
-                        "astro_swap": {
-                            "offer_asset_info": {
-                                "native_token": {
-                                    "denom": "uluna"
-                                }
-                            },
-                            "ask_asset_info": {
-                                "token": {
-                                    "contract_addr": usdcAddress
-                                }
-                            }
-                        }
-                    }, 
-                    {
-                        "astro_swap": {
-                            "offer_asset_info": {
-                                "token": {
-                                    "contract_addr": usdcAddress
-                                }
-                            },
-                            "ask_asset_info": {
-                                "token": {
-                                    "contract_addr": zeroAddress
-                                }
-                            }
-                        }
-                    }
-                ]
+```json
+{
+  "execute_swap_operations": {
+    "operations": [
+      {
+        "astro_swap": {
+          "offer_asset_info": {
+            "native_token": {
+              "denom": "uluna"
             }
+          },
+          "ask_asset_info": {
+            "native_token": {
+              "denom": "ibc/2C962DAB9F57FE0921435426AE75196009FAA1981BF86991203C8411F8980FDB"
+            }
+          }
         }
-        ).then(result => { beliefPrice = result.amount });
+      },
+      {
+        "pool_swap": {
+          "pool_addr": "terra1p3sea2vjewtr9ap4hv7nc75k5jc852ftf0w5u06wsk420y5urc9s9xtxdj",
+          "offer_asset_info": {
+            "native_token": {
+              "denom": "ibc/2C962DAB9F57FE0921435426AE75196009FAA1981BF86991203C8411F8980FDB"
+            }
+          },
+          "ask_asset_info": {
+            "native_token": {
+              "denom": "ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B"
+            }
+          }
+        }
+      }
+    ],
+    "minimum_receive": "390451"
+  }
+}
+```
 
-        console.log(beliefPrice);
-        ``` */}
+| Parameter | Type | Description |
+| --------- | ---- | ----------- |
+| `operations` | `Vec<SwapOperation>` | The hops, in order (1 to 50) |
+| `minimum_receive` | `Uint128` | Required, greater than zero. Least amount of the final ask asset the recipient must receive |
+| `to` | `Option<String>` | Recipient of the final ask asset, if not the sender |
 
-    </CH.Scrollycoding>
-</CH.Section>
+A complete CosmJS script (see [Swapping](swapping#setup) for the client setup):
 
+```js
+const router = "terra1txm8xcy8mete9e5zh5ktqr4jm4cq4ja8djttg3zkqll64x4ksq7qknaesf"; // Router 2.0.0
+const usdc = "ibc/2C962DAB9F57FE0921435426AE75196009FAA1981BF86991203C8411F8980FDB";
+const usdcInj = "ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B";
+const transmuter = "terra1p3sea2vjewtr9ap4hv7nc75k5jc852ftf0w5u06wsk420y5urc9s9xtxdj";
 
+const native = (denom) => ({ native_token: { denom } });
 
+const operations = [
+  { astro_swap: { offer_asset_info: native("uluna"), ask_asset_info: native(usdc) } },
+  { pool_swap: { pool_addr: transmuter, offer_asset_info: native(usdc), ask_asset_info: native(usdcInj) } },
+];
+
+const offerAmount = "10000000"; // 10 LUNA
+
+// 1. Simulate
+const { amount } = await client.queryContractSmart(router, {
+  simulate_swap_operations: { offer_amount: offerAmount, operations },
+});
+
+// 2. Accept at most 1% less than the simulation (integer math, rounded down)
+const minimumReceive = ((BigInt(amount) * 99n) / 100n).toString();
+
+// 3. Execute, attaching the offer asset
+const result = await signingClient.execute(
+  sender,
+  router,
+  { execute_swap_operations: { operations, minimum_receive: minimumReceive } },
+  "auto",
+  "",
+  [{ denom: "uluna", amount: offerAmount }]
+);
+
+console.log(result.transactionHash);
+```
 
 ## CW20 Routing
 
-Use when the initial offer asset is a CW20 token.
+When the first offer asset is a CW20 token, call `send` on the token contract with the router as `contract` and the base64-encoded `execute_swap_operations` message as `msg`. The amount comes from the `send`; the hook takes `operations`, `minimum_receive` and an optional `to`.
 
-<CH.Section>
-    <CH.Scrollycoding>
+The decoded hook message:
 
-        ### `Cw20HookMsg`
-
-        To perform a CW20 swap, you need to execute a contract message pointing to the [`send`](https://docs.rs/cw20/latest/cw20/enum.Cw20ExecuteMsg.html#variant.Send) endpoint in the CW20 contract of the token you are swapping.
-
-        `send` includes the contract the tokens are being sent to (router contract), the amount to send/swap, and a binary encoded msg containing our contract call.
-
-        ```json 
-        {
-          "send": {
-            "contract": routerAddress, 
-            "amount": "1000000", 
-            "msg": toBase64(
-              {
-                "execute_swap_operations": {
-                  "operations": [
-                    {
-                      "astro_swap": {
-                        "offer_asset_info": {
-                          "token": {
-                            "contract_addr": astroAddress
-                          }
-                        },
-                        "ask_asset_info": {
-                          "native_token": {
-                            "denom": "uluna"
-                          }
-                        }
-                      }
-                    }, 
-                    {
-                      "astro_swap": {
-                        "offer_asset_info": {
-                          "native_token": {
-                            "denom": "uluna"
-                          }
-                        },
-                        "ask_asset_info": {
-                          "token": {
-                            "contract_addr": steakAddress
-                          }
-                        }
-                      }
-                    }
-                  ], 
-                  "minimum_receive": nativeBeliefPrice,
-                  "max_spread": "0.005"
-                }
-              }
-            )
-          }
-        }
-        ```
-
-        ---
-
-        #### `execute_swap_operations`
-
-        Our encoded swap message performs a contract call to the [`execute_swap_operations`](#execute_swap_operations) endpoint in the `Router` contract. This is the same operation covered above in [Native Routing](#native-routing).
-
-        ```json focus=6:41
-        ```
-
-        ---
-
-        ### Encoding our `Msg`
-
-        To encode our message, there are two common options:
-
-        - An [online base64 encoder](https://www.base64encode.org/)
-        - A custom function
-        
-        The code in this section uses a custom function (`toBase64`) to display our binary message - this function needs to be defined elsewhere to be used. The actual string representation of our message would be an encoded binary.
-
-        ```json focus=5:42
-        ```
-
-        ---
-
-        #### `toBase64` Encoder
-
-        The code in this section is an example of what a `send` message may look like [feather.js](../network/terra-2#featherjs) to define our custom function and encode our message.
-
-        ```js
-        const toBase64 = (obj) => {
-          return Buffer.from(JSON.stringify(obj)).toString("base64");
-        };
-
-        const cw20RouterSwap = new MsgExecuteContract(
-          wallet.key.accAddress('terra'),
-          astroAddress,
-          {
-            "send": {
-              "contract": routerAddress, 
-              "amount": "1000000", 
-              "msg": toBase64(
-                {
-                  "execute_swap_operations": {
-                    "operations": [
-                      {
-                        "astro_swap": {
-                          "offer_asset_info": {
-                            "token": {
-                              "contract_addr": astroAddress
-                            }
-                          },
-                          "ask_asset_info": {
-                            "native_token": {
-                              "denom": "uluna"
-                            }
-                          }
-                        }
-                      }, 
-                      {
-                        "astro_swap": {
-                          "offer_asset_info": {
-                            "native_token": {
-                              "denom": "uluna"
-                            }
-                          },
-                          "ask_asset_info": {
-                            "token": {
-                              "contract_addr": steakAddress
-                            }
-                          }
-                        }
-                      }
-                    ], 
-                    "minimum_receive": nativeBeliefPrice,
-                    "max_spread": "0.005"
-                  }
-                }
-              )
+```json
+{
+  "execute_swap_operations": {
+    "operations": [
+      {
+        "astro_swap": {
+          "offer_asset_info": {
+            "token": {
+              "contract_addr": "terra1...token"
+            }
+          },
+          "ask_asset_info": {
+            "native_token": {
+              "denom": "uluna"
             }
           }
-        )
-
-        const fee = new Fee(2000000, { uluna: 200000 });
-
-        // // BROADCAST TRANSACTION
-        const tx = await wallet.createAndSignTx({
-          msgs: [cw20RouterSwap],
-          fee,
-          chainID: 'pisco-1',
-        });
-
-        const result = await lcd.tx.broadcast(tx, 'pisco-1');
-
-        console.log(result);
-        ```
-
-        ---
-
-        ### Calculating `minimum_receive`
-
-        Lastly, calculating `minimum_receive` for CW20 swaps is the exact same as it is for native swaps. 
-
-        Note that since we are performing a CW20 swap, our initial offer asset is a CW20 token and not a native asset like `uluna`, but the logic remains the same. To learn more about this topic, refer to the section [above](#calculating-minimum_receive).
-
-        ```json
-        {
-          "simulate_swap_operations": {
-        "offer_amount": "1000000",
-            "operations": [
-              {
-                "astro_swap": {
-                  "offer_asset_info": {
-                    "token": {
-                      "contract_addr": astroAddress
-                    }
-                  },
-                  "ask_asset_info": {
-                    "native_token": {
-                      "denom": "uluna"
-                    }
-                  }
-                }
-              }, 
-              {
-                "astro_swap": {
-                  "offer_asset_info": {
-                    "native_token": {
-                      "denom": "uluna"
-                    }
-                  },
-                  "ask_asset_info": {
-                    "token": {
-                      "contract_addr": steakAddress
-                    }
-                  }
-                }
-              }
-            ]
+        }
+      },
+      {
+        "astro_swap": {
+          "offer_asset_info": {
+            "native_token": {
+              "denom": "uluna"
+            }
+          },
+          "ask_asset_info": {
+            "native_token": {
+              "denom": "ibc/2C962DAB9F57FE0921435426AE75196009FAA1981BF86991203C8411F8980FDB"
+            }
           }
         }
-        ```
+      }
+    ],
+    "minimum_receive": "123456"
+  }
+}
+```
 
-    </CH.Scrollycoding>
-</CH.Section>
+With CosmJS:
+
+```js
+import { toBinary } from "@cosmjs/cosmwasm-stargate";
+
+const cw20Token = "terra1...token";
+
+const result = await signingClient.execute(
+  sender,
+  cw20Token, // the message goes to the token contract
+  {
+    send: {
+      contract: router,
+      amount: "1000000",
+      msg: toBinary({
+        execute_swap_operations: {
+          operations: cw20Operations,     // the hops above
+          minimum_receive: minimumReceive, // from simulate_swap_operations, minus slippage
+        },
+      }),
+    },
+  },
+  "auto"
+);
+```
+
+Simulate CW20 routes the same way as native ones: pass the CW20 `token` asset info in the first operation.
+
+## Response Data
+
+When a route starts with a native asset, the transaction's response data holds the total amount received, as `SwapResponseData`:
+
+```json
+{
+  "return_amount": "394395"
+}
+```
+
+It is not set for routes that start with a CW20 `send`, because the CW20 contract replaces the response data.
+
+## Links
+
+- [Router contract](/docs/develop/smart-contracts/router)
+- [Router 2.0 README and message types](https://github.com/astroport-fi/astroport-core/tree/main/contracts/router)
+- [Swapping](swapping): single-pool swaps with `belief_price` and `max_spread`
+- [Contract Addresses](/docs/develop/smart-contracts/contract-addresses)

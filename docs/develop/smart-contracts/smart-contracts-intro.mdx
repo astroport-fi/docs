@@ -1,23 +1,15 @@
-import Admonition from '@theme/Admonition'
-
-import Cards from '@site/src/components/Cards';
-
 # Smart Contracts
 
-<Cards
-    title="Smart Contracts"
-/>
+Astroport's contracts run on Terra (`phoenix-1`) and Neutron (`neutron-1`) and are in long-term support: they stay live, and changes are limited to security fixes and maintenance. The "Astroport - Contributors" DAO on each chain controls them through the protocol owner contracts. There is no token governance.
 
-{/* - [**`factory:`**](./factory) Creates new Astroport pair contracts (and associated LP token contracts) which are tracked in a registry and used as a directory for all pairs. 
-- [**`constant_product_pools:`**](./swap-pairs/constant-product-pools) Uses the widely known xy=k formula.
-- [**`stableswap_pools:`**](./swap-pairs/stableswap-pools) Uses the 4A(Rx+Ry) + D formula, resulting in a constant price ∆x / ∆y = 1.
-- [**`oracle:`**](./oracle) Calculates a 1 day TWAP for an xy=k Astroport pool.
-- [**`router:`**](./router) Contains logic to facilitate multi-hop swaps for Cosmos native & CW20 tokens.
-- [**`token:`**](./token) Implementation for the ASTRO token.
-- [**`generator:`**](./tokenomics/generator) Allocates token rewards (ASTRO) for various LP tokens and distributes them pro-rata to LPs. 
-- [**`generator_proxy:`**](./tokenomics/generator-proxy) Allows an external staking contract to be connected to the Generator to offer a second reward besides ASTRO token emissions.
-- [**`maker:`**](./tokenomics/maker) Collects part of Astroport's pair fees (according to the factory's `maker_fee`).
-- [**`staking:`**](./tokenomics/staking)  Allows ASTRO holders to stake their tokens in exchange for xASTRO.
-- [**`vesting:`**](./tokenomics/vesting) Progressively unlocks ASTRO that can then be distributed to LPs via the Generator contract.
-- [**`xastro_token:`**](./tokenomics/xastro-token) ASTRO token implementation.
-- [**`astral_assembly:`**](./astral-assembly) Allows xASTRO holders as well as Initial Astroport Builders to post and vote on new on-chain proposals that can execute arbitrary logic. */}
+- [**Contract Addresses**](./contract-addresses): every live contract with its version, plus retired contracts.
+- [**Source Code and Versions**](./github-commits): where the source lives and how to check a deployed contract.
+- [**Common Types**](./common-types): shared types such as `AssetInfo`, `Asset` and `PairInfo`.
+- [**Factory**](./factory): creates pools and keeps the registry of pools and pool types.
+- [**Swap Pairs**](./swap-pairs/swap-pairs-intro): constant product, stableswap, PCL and exit-only pools.
+- [**Oracle**](./oracle): a demo TWAP contract.
+- [**Router**](./router): multi-hop swaps. Router 2.0 is recommended.
+- [**ASTRO Token**](./token): ASTRO denoms, supply and legacy tokens.
+- [**Tokenomics**](./tokenomics/tokenomics-intro): Maker, ASTRO burner, yASTRO, Incentives, Vesting, and the retired xASTRO staking.
+- [**Periphery Contracts**](./periphery/periphery-contracts-intro): native coin registry, liquidity manager and helpers.
+- [**Access Controls and Permissions**](./access-controls-and-permissions): who owns and admins each contract.

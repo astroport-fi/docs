@@ -1,4 +1,3 @@
-import DocCardList from '@theme/DocCardList';
 import Admonition from '@theme/Admonition'
 
 # Swap Pairs
@@ -7,31 +6,39 @@ import Admonition from '@theme/Admonition'
 
 Astroport supports various pool types:
 
-- [Constant Product Pools](./constant-product-pools)
-- [Stableswap Invariant Pools](./stableswap-pools)
-- [Passive Concentrated Liquidity Pools](./passive-concentrated-liquidity-pools) (currently in testnet, pending governance approval for mainnet)
+- [Passive Concentrated Liquidity Pools](./passive-concentrated-liquidity-pools.mdx) (`astroport-pair-concentrated`)
+- [Stableswap Invariant Pools](./stableswap-pools.mdx) (`astroport-pair-stable`)
+- [Constant Product Pools](./constant-product-pools.mdx) (`astroport-pair`)
 
-Depending on your use-cases and needs as well as the types of assets you want to integrate, one of these pools will be better than the other. To learn more about Astroport pools, visit [here](../../../learn/astro-pools/astro-pools-intro).
+Depending on your use-cases and needs as well as the types of assets you want to integrate, one of these pools will be better than the other. To learn more about Astroport pools, visit [here](/docs/learn/astro-pools/astro-pools-intro).
+
+astroport-core also contains more specialised pool contracts that share the same pool interface: a transmuter (`pair_transmuter`, constant sum for 1:1 assets with no fee or slippage), a concentrated pool with an orderbook integration (`pair_concentrated_duality`, Neutron), pools with sale taxes (`pair_xyk_sale_tax`, `pair_concentrated_sale_tax`) and the one-way ASTRO converter pools (`pair_astro_converter`). Pools are created through the [factory](../factory.mdx), which keeps the list of pool types it can create and their fees.
+
+## Exit-Only Pools
+
+Six Neutron pools that were drained in the 2026-09-22 incident now run [`astroport-pair-exit-only`](./exit-only-pools.mdx) 1.0.0. They were refilled with the returned assets and only allow balanced withdrawals: no swaps and no deposits. LPs withdraw with `withdraw_liquidity` as usual. Routers and aggregators should not route through them; their simulation queries return an error.
 
 ## Liquidity Providers
 
 A user can provide liquidity to a pool by calling `provide_liquidity`. Users can also withdraw liquidity by calling `withdraw_liquidity`.
 
 <Admonition type="info" title="NOTE">
-    Before executing the `provide_liqudity` operation, a user must allow the pool contract to take tokens from their wallet
+    Native assets are attached to `provide_liquidity` as funds. For CW20 assets, a user must first allow the pool contract to take the tokens from their wallet.
 </Admonition>
 
-Whenever liquidity is deposited into a pool, special tokens known as "liquidity tokens" are minted to the provider’s address, in proportion to how much liquidity they contributed to the pool. These tokens are a representation of a liquidity provider’s contribution to a pool. Whenever a trade occurs, the lp_commission is distributed pro-rata to all LPs in the pool at the moment of the trade. To receive the underlying liquidity back plus accrued LP fees, LPs must burn their liquidity tokens.
+Whenever liquidity is deposited into a pool, special tokens known as "liquidity tokens" are minted to the provider's address, in proportion to how much liquidity they contributed to the pool. Pools created by current factories use a tokenfactory LP denom (`factory/<pool address>/astroport/share`); older pools use a CW20 LP token. These tokens are a representation of a liquidity provider's contribution to a pool. Whenever a trade occurs, the LP part of the fee stays in the pool and accrues pro rata to all LPs at the moment of the trade. To receive the underlying liquidity back plus accrued LP fees, LPs must burn their liquidity tokens with `withdraw_liquidity`. Withdrawals are balanced: an LP receives its share of every pool asset.
+
+LP tokens can be staked in the [Incentives](../tokenomics/incentives.mdx) contract to earn external incentives, either afterwards or at deposit time with `auto_stake`. Astroport no longer pays ASTRO emissions to pools.
 
 When providing liquidity from a smart contract, the most important thing to keep in mind is that the amount of tokens deposited into a pool and the amount of tokens withdrawn later from the pool will most likely not be the same (even if stableswap encourages a constant 1:1 ratio between all assets in the pool). In the case of PCL and constant product pools, as token prices in the pool change, so do the respective token amounts that a LP can withdraw.
 
 ### Slippage Tolerance for Providing Liquidity
 
-If an LP specifies a slippage tolerance when they provide liquidity, the pool contract makes sure that the transaction goes through only if the pool price does not change more than tolerance.
+If an LP specifies a slippage tolerance when they provide liquidity, the pool contract makes sure that the transaction goes through only if the pool price does not change more than tolerance. `min_lp_to_receive` adds a floor on the LP tokens minted.
 
-As an example, let's say someone LPs in a passive concentrated liquidity pool and specifies a 1% slippage tolerance. The user LPs 200 axlUSDC and 1 ASSET. A similar example could be set with a stableswap pool and a pair of 200 axlUSDC and 200 ASSET. 
+As an example, let's say someone LPs in a passive concentrated liquidity pool and specifies a 1% slippage tolerance. The user LPs 200 USDC and 1 ASSET. A similar example could be set with a stableswap pool and a pair of 200 USDC and 200 ASSET.
 
-With a 1% slippage tolerance, amountaxlUSDCMin (the minimum amount of axlUSDC to LP) should be set to 198 axlUSDC, and amountASSETMin (the minimum amount of ASSET to LP) should be set to .99 ASSET. This means that, in a worst case scenario, liquidity will be added at a pool rate of 198 ASSET/1 axlUSDC or 202.02 axlUSDC/1 ASSET (200 axlUSDC + .99 ASSET). If the contract cannot add liquidity within these bounds (because the pool ratio changed more than the tolerance), the transaction will revert.
+With a 1% slippage tolerance, amountUSDCMin (the minimum amount of USDC to LP) should be set to 198 USDC, and amountASSETMin (the minimum amount of ASSET to LP) should be set to .99 ASSET. This means that, in a worst case scenario, liquidity will be added at a pool rate of 198 USDC/1 ASSET or 202.02 USDC/1 ASSET (200 USDC + .99 ASSET). If the contract cannot add liquidity within these bounds (because the pool ratio changed more than the tolerance), the transaction will revert.
 
 ## Traders
 
@@ -49,5 +56,4 @@ Note that the spread is calculated before commission deduction in order to prope
     Astroport has the default value for the spread set to 0.5% and the max allowed spread set to 50%.
 </Admonition>
 
-
-
+For multi-hop swaps, [router](../router.mdx) 2.0 disables each pool's spread check and enforces a single `minimum_receive` on the final output instead.

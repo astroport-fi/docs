@@ -1,0 +1,78 @@
+---
+sidebar_position: 2
+---
+
+import Admonition from '@theme/Admonition'
+
+# Long-Term Support
+
+## Overview
+
+Astroport is in long-term support (LTS). The contracts on Terra (phoenix-1) and Neutron (neutron-1) and the app at [app.astroport.fi](https://app.astroport.fi) stay live. What changes is how the protocol is run:
+
+- **Contracts and app stay live.** You can keep swapping, providing and withdrawing liquidity, staking LP tokens and claiming rewards as before.
+- **Security fixes come first.** Work on the protocol is limited to security, maintenance and what LTS itself needs. No new features are planned beyond that.
+- **Governance is retired.** There is no ASTRO, xASTRO or vxASTRO voting, no token holder proposals in the Assembly, no emissions voting and no tributes (bribes). Existing vxASTRO positions simply unwind through their normal unlock.
+- **No ASTRO emissions.** ASTRO emissions to pools are zero. Anyone can still add external incentives to a pool (see [Astro Incentives](./astro-incentives)).
+- **Fees go to ASTRO burns, yASTRO stakers and development.** See [Where fees go](#where-fees-go) below.
+- **Only Terra and Neutron are supported.** Sei, Injective, Osmosis and Terra Classic are no longer supported by Astroport.
+
+## September 2026 Neutron incident and recovery
+
+On 2026-09-22, a Neutron governance proposal (Neutron prop 9) took control of eight Astroport contracts on Neutron and drained 370.3M ASTRO from xASTRO staking, plus the assets of six pools. Neutron halted and restarted on 2026-09-25, and the funds were returned to a recovery multisig.
+
+The recovery was completed by 2026-11-03:
+
+- **xASTRO is retired.** xASTRO staking on Neutron was frozen and retired. It no longer accepts deposits or withdrawals, and xASTRO has no value and can't be redeemed.
+- **xASTRO holders were paid in ASTRO.** Every pre-incident xASTRO holder was paid at **1.3402 ASTRO per xASTRO** (exactly 370,318,691.388430 ASTRO / 276,322,268.374898 xASTRO, the rate at Neutron block 61,633,114, before the incident). 1,788 wallets on Neutron received 327.3M ASTRO (including refunds of 4.99M ASTRO to people who deposited after the incident) and 57 wallets on Terra received 47.9M ASTRO (balances at Terra block 22,948,000). Payments were sent automatically through the xASTRO payout contracts; nobody had to claim. xASTRO held through contracts (vaults, LP positions, ve3, Eclipse) was looked through and paid to the underlying wallets, and DAOs were paid at their own addresses. Both payouts are finished.
+- **The six drained pools are withdraw-only.** They were refilled with the returned assets and LPs can withdraw their share. These pools only allow balanced withdrawals: no swaps and no deposits.
+
+| Pool (Neutron) | Address |
+|---|---|
+| dATOM/USDC | [neutron1nfns3ck2ykrs0fknckrzd9728cyf77devuzernhwcwrdxw7ssk2s3tjf8r](https://neutron.celat.one/neutron-1/contracts/neutron1nfns3ck2ykrs0fknckrzd9728cyf77devuzernhwcwrdxw7ssk2s3tjf8r) |
+| NTRN/USDC | [neutron18c8qejysp4hgcfuxdpj4wf29mevzwllz5yh8uayjxamwtrs0n9fshq9vtv](https://neutron.celat.one/neutron-1/contracts/neutron18c8qejysp4hgcfuxdpj4wf29mevzwllz5yh8uayjxamwtrs0n9fshq9vtv) |
+| dATOM/ATOM | [neutron1yem82r0wf837lfkwvcu2zxlyds5qrzwkz8alvmg0apyrjthk64gqeq2e98](https://neutron.celat.one/neutron-1/contracts/neutron1yem82r0wf837lfkwvcu2zxlyds5qrzwkz8alvmg0apyrjthk64gqeq2e98) |
+| USDC/DYDX | [neutron1j4xpv03fw664mvntlhqnzp5hjqk2nfw00vrgx9qlq97rxc9fu3lqvmszl2](https://neutron.celat.one/neutron-1/contracts/neutron1j4xpv03fw664mvntlhqnzp5hjqk2nfw00vrgx9qlq97rxc9fu3lqvmszl2) |
+| wstETH/WETH | [neutron1yw0a7nxa8jdgzmdsme4gwxhj76n44z305qgwrzvlfavgna9epcys3k9m2f](https://neutron.celat.one/neutron-1/contracts/neutron1yw0a7nxa8jdgzmdsme4gwxhj76n44z305qgwrzvlfavgna9epcys3k9m2f) |
+| axlUSDC/USDC | [neutron1ns2tcunrlrk5yk62fpl74ycazanceyfmmq7dlj6sq8n0rnkuvk7szstkyx](https://neutron.celat.one/neutron-1/contracts/neutron1ns2tcunrlrk5yk62fpl74ycazanceyfmmq7dlj6sq8n0rnkuvk7szstkyx) |
+
+<Admonition type="info" title="Withdrawing from a withdraw-only pool">
+If your LP tokens are staked in Incentives, unstake them first, then withdraw liquidity from the pool. A withdrawal pays your share of every asset the pool holds. One-sided withdrawals are refused. See [Providing/Withdrawing Liquidity](./workstation/farmers-fields/providing-withdrawing-liquidity).
+</Admonition>
+
+## Where fees go
+
+Each pool sends part of its trading fee to the Maker contract on its chain (see [Fees](./astro-tokenomics/fees) for the split per pool type). The Makers never sell ASTRO. Fee collection is permissionless (anyone can trigger it) and runs weekly, on Sunday evenings (UTC).
+
+**Neutron: burn only.** The Neutron Maker converts collected fees into NTRN, then buys ASTRO with 100% of it and deposits it into the ASTRO burner, which burns it.
+
+**Terra: burn, yASTRO and development.** The Terra Maker converts collected fees into USDC.inj, then splits them:
+
+| Share | Where it goes |
+|---|---|
+| 25% | Bought into ASTRO and sent to Neutron, where it is burned by the ASTRO burner |
+| 25% | Deposited into [yASTRO](./yastro) and streamed to yASTRO stakers over the following week |
+| 50% | Sent to the Terra Astroport Development Fund, which pays for infrastructure and security |
+
+Because ASTRO can no longer be minted and the Makers keep burning it, the ASTRO supply only goes down. See [Supply and Allocation](./astro-tokenomics/allocation).
+
+## Who runs the protocol
+
+There is no token voting. The protocol is operated by an "Astroport - Contributors" DAO on each chain (built on DAO DAO), which acts through the contracts that already own the protocol.
+
+| Role | Neutron | Terra |
+|---|---|---|
+| Astroport - Contributors DAO | [neutron1rfxjrha2cqrt92vcx9rfwz3tz287kw4suv6m0je7hcn6sh3l7etscn03mc](https://neutron.celat.one/neutron-1/contracts/neutron1rfxjrha2cqrt92vcx9rfwz3tz287kw4suv6m0je7hcn6sh3l7etscn03mc) | [terra1txh3xyk0yzkhwzwckzh8sswlywrhrvkr2fe97rfmxvt6d2yzjznsynrqnq](https://terrasco.pe/mainnet/address/terra1txh3xyk0yzkhwzwckzh8sswlywrhrvkr2fe97rfmxvt6d2yzjznsynrqnq) |
+| Protocol owner (owns and admins the contracts) | Assembly [neutron1ffus553eet978k024lmssw0czsxwr97mggyv85lpcsdkft8v9ufsz3sa07](https://neutron.celat.one/neutron-1/contracts/neutron1ffus553eet978k024lmssw0czsxwr97mggyv85lpcsdkft8v9ufsz3sa07) | Satellite ("Astroport Assembly" on Terra) [terra1k9j8rcyk87v5jvfla2m9wp200azegjz0eshl7n2pwv852a7ssceqsnn7pq](https://terrasco.pe/mainnet/address/terra1k9j8rcyk87v5jvfla2m9wp200azegjz0eshl7n2pwv852a7ssceqsnn7pq) |
+| Emergency multisig | [neutron1ac2fddfcr3ax4ggarhx0vcaj32fmatsx8p5d6a](https://www.mintscan.io/neutron/address/neutron1ac2fddfcr3ax4ggarhx0vcaj32fmatsx8p5d6a) | [terra1alsky8h94xgfz24hsjq3cylw4vykgzrx6jr6sq](https://terrasco.pe/mainnet/address/terra1alsky8h94xgfz24hsjq3cylw4vykgzrx6jr6sq) |
+| Astroport - Development Fund | [neutron1atj3u6l6t4y90d0csxgn8ax6psyzjxq2rqcrn4qa656ked3ep06sck0s6k](https://neutron.celat.one/neutron-1/contracts/neutron1atj3u6l6t4y90d0csxgn8ax6psyzjxq2rqcrn4qa656ked3ep06sck0s6k) | [terra19gzq28ktdwsvkqzrr02u705a07hjwqmxse76552x7azxuwsej4nsm200yj](https://terrasco.pe/mainnet/address/terra19gzq28ktdwsvkqzrr02u705a07hjwqmxse76552x7azxuwsej4nsm200yj) |
+
+- The Contributors DAO on Neutron executes through the Assembly, and the Contributors DAO on Terra executes through the satellite. The Assembly and the satellite remain the owners and admins of the contracts on their chains.
+- The emergency multisigs stay in place as emergency owners.
+- The Development Fund DAOs pay for infrastructure and security work.
+
+## Links
+
+- [yASTRO](./yastro): stake ASTRO on Terra and earn a share of Terra fees
+- [Contract addresses](/docs/develop/smart-contracts/contract-addresses): every live Astroport contract on Terra and Neutron
+- [Astroport FAQ](/docs/overview/astroport-faq)

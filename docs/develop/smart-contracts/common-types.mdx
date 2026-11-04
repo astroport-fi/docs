@@ -6,25 +6,25 @@ sidebar_position: 3
 
 ## Overview
 
-This is a collection of types which are commonly used in Astroport contracts.
+Types used across Astroport contracts, from the `astroport` package.
 
-## Links 
+## Links
 
 - **Github:** https://github.com/astroport-fi/astroport-core/tree/main/packages/astroport
 - **asset.rs:** https://github.com/astroport-fi/astroport-core/blob/main/packages/astroport/src/asset.rs
-- **common.rs** https://github.com/astroport-fi/astroport-core/blob/main/packages/astroport/src/common.rs
+- **common.rs:** https://github.com/astroport-fi/astroport-core/blob/main/packages/astroport/src/common.rs
 
 ## Data Types
 
-
 ### `AssetInfo`
 
-AssetInfo is a convenience wrapper to represent whether a token is the native one (from a specific chain, like LUNA for Terra) or not. It also returns the contract address of that token.
+Identifies an asset: a native denom (bank, IBC or tokenfactory, such as `uluna` or `factory/<creator>/<subdenom>`) or a CW20 token contract.
 
 <CH.Section>
 <CH.Code>
 
 ```rust asset.rs
+#[cw_serde]
 pub enum AssetInfo {
     Token { contract_addr: Addr },
     NativeToken { denom: String },
@@ -33,29 +33,28 @@ pub enum AssetInfo {
 
 </CH.Code>
 
-| **Variants**      | **Description** |
+| **Variants** | **Description** |
 | ----------- | ----------- |
-| [`Token`](focus://asset.rs#2)    | Non-native Token        |
-| [`NativeToken`](focus://asset.rs#3)      | Native token       |
+| `token` | A CW20 token: `{"token": {"contract_addr": "terra1..."}}` |
+| `native_token` | A native denom: `{"native_token": {"denom": "uluna"}}` |
 
 </CH.Section>
 
 ### `Asset`
 
-This enum contains asset info and a token amount.
+An asset and an amount.
 
 <CH.Section>
 <CH.Code>
 
-
-```json json 
+```json json
 {
-    "info": {
-        "token": {
-            "contract_addr": "..."
-        }
-    }, 
-    "amount": "100000"
+  "info": {
+    "native_token": {
+      "denom": "ibc/8D8A7F7253615E5F76CB6252A1E1BD921D5EDB7BBAAF8913FB1C77FF125D9995"
+    }
+  },
+  "amount": "1000000"
 }
 ```
 
@@ -69,29 +68,28 @@ pub struct Asset {
 
 </CH.Code>
 
-| **Params**      | **Type** | **Description** |
+| **Params** | **Type** | **Description** |
 | ----------- | ----------- | ----------- |
-| [`info`](focus://json#2:6)   | [`AssetInfo`](#assetinfo)        | Information about an asset stored in a [`AssetInfo`] struct      |
-| [`amount`](focus://json#7)   | `Uint128`        | A token amount     |
-
+| [`info`](focus://json#2:6) | [`AssetInfo`](#assetinfo) | The asset |
+| [`amount`](focus://json#7) | `Uint128` | The amount, in the asset's smallest unit |
 
 </CH.Section>
 
 ### `DecimalAsset`
 
-This struct describes an asset as decimal.
+An asset with a decimal amount.
 
 <CH.Section>
 <CH.Code>
 
 ```json json
 {
-    "info": {
-        "token": {
-            "contract_addr": "..."
-        }
-    }, 
-    "amount": "0.12345"
+  "info": {
+    "native_token": {
+      "denom": "ibc/8D8A7F7253615E5F76CB6252A1E1BD921D5EDB7BBAAF8913FB1C77FF125D9995"
+    }
+  },
+  "amount": "1.5"
 }
 ```
 
@@ -105,74 +103,74 @@ pub struct DecimalAsset {
 
 </CH.Code>
 
-| **Params**      | **Type** | **Description** |
+| **Params** | **Type** | **Description** |
 | ----------- | ----------- | ----------- |
-| [`info`](focus://json#2:6)   | [`AssetInfo`](#assetinfo)        | Information about an asset stored in a [`AssetInfo`] struct      |
-| [`amount`](focus://json#7)   | `Decimal256`        | A token decimal amount     |
+| [`info`](focus://json#2:6) | [`AssetInfo`](#assetinfo) | The asset |
+| [`amount`](focus://json#7) | `Decimal256` | The amount as a decimal |
 
 </CH.Section>
 
 ### `PairInfo`
 
-It is used to represent response data coming from a `Pair-Info-Querier`.
+Describes a pool. Returned by a pool's `pair` query and the factory's `pair` and `pairs` queries.
 
 <CH.Section>
 <CH.Code>
 
 ```json json
 {
-    "asset_infos": [
-        {
-            "token": {
-                "contract_addr": "..."
-            }
-        }, 
-        {
-            "native_token": {
-                "denom": "..."
-            }
-        }
-    ], 
-    "contract_addr": "...", 
-    "liquidity_token": "...", 
-    "pair_type": {
-        "xyk": {}
+  "asset_infos": [
+    {
+      "native_token": {
+        "denom": "uluna"
+      }
+    },
+    {
+      "native_token": {
+        "denom": "ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B"
+      }
     }
+  ],
+  "contract_addr": "terra1...pool",
+  "liquidity_token": "factory/terra1...pool/astroport/share",
+  "pair_type": {
+    "xyk": {}
+  }
 }
 ```
 
 ```rust asset.rs
+#[cw_serde]
 pub struct PairInfo {
-    pub asset_infos: [AssetInfo; 2],
+    pub asset_infos: Vec<AssetInfo>,
     pub contract_addr: Addr,
-    pub liquidity_token: Addr,
+    pub liquidity_token: String,
     pub pair_type: PairType,
 }
 ```
 
 </CH.Code>
 
-| **Params**      | **Type** | **Description** |
+| **Params** | **Type** | **Description** |
 | ----------- | ----------- | ----------- |
-| [`asset_infos`](focus://json#2:13)   | [`Vec<AssetInfo>`](#assetinfo)        | Asset information for the assets in the pool        |
-| [`contract_addr`](focus://json#14)      | `Addr`       | Pair contract address       |
-| [`liquidity_token`](focus://json#15)   | `Addr`        | Pair LP token address        |
-| [`pair_type`](focus://json#16:18)   | [`PairType`](./factory#pairtype)        | The pool type (xyk, stableswap, etc) available in [`PairType`]      |
+| [`asset_infos`](focus://json#2:13) | [`Vec<AssetInfo>`](#assetinfo) | The pool's assets |
+| [`contract_addr`](focus://json#14) | `Addr` | The pool contract address |
+| [`liquidity_token`](focus://json#15) | `String` | The LP token: a tokenfactory denom (`factory/<pool>/astroport/share`) for current pools, or a CW20 address for older ones |
+| [`pair_type`](focus://json#16:18) | [`PairType`](./factory.mdx#pairtype) | The pool type |
 
 </CH.Section>
 
-
 ### `OwnershipProposal`
 
-This structure describes the parameters used for creating a request for a change of contract ownership.
+A pending offer to change a contract's owner, created by `propose_new_owner`.
 
 <CH.Section>
 <CH.Code>
 
 ```json json
 {
-    "owner": "...", 
-    "ttl": 123456
+  "owner": "terra1...",
+  "ttl": 1731300000
 }
 ```
 
@@ -186,9 +184,9 @@ pub struct OwnershipProposal {
 
 </CH.Code>
 
-| **Params**      | **Type** | **Description** |
+| **Params** | **Type** | **Description** |
 | ----------- | ----------- | ----------- |
-| [`owner`](focus://json#2)   | `Addr`        | The newly proposed contract owner        |
-| [`ttl`](focus://json#3)   | `u64`        | Time until the proposal to change ownership expires      |
+| [`owner`](focus://json#2) | `Addr` | The proposed owner |
+| [`ttl`](focus://json#3) | `u64` | Time (in seconds since epoch) when the offer expires |
 
 </CH.Section>

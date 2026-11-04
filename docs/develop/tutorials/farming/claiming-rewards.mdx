@@ -2,79 +2,153 @@
 sidebar_position: 4
 ---
 
+import Admonition from '@theme/Admonition'
+
 # Claiming Rewards
 
 ## Overview
 
-There are two main types of rewards that liquidity providers can claim: 
+Liquidity providers earn in two ways:
 
-- Swap fees. Each trade incurs a swap fee depending on the pool type. Fees are then distributed to liquidity providers on a pro rata basis. 
+- **Swap fees.** The liquidity providers' part of every swap fee stays in the pool. It raises the value of each LP token and is paid out when you withdraw liquidity. There is nothing to claim.
+- **Incentive rewards.** If your LP tokens are staked in the Incentives contract and the pool has active incentive schedules, rewards accrue every second. You claim them with `claim_rewards`.
 
-- If you stake your LP tokens into the [`Generator`](../../smart-contracts/tokenomics/generator) contract, you can also receive ASTRO emissions and 3rd party incentive rewards. 
+There are no ASTRO emissions: incentive rewards come only from external schedules (see [below](#where-rewards-come-from)).
 
-## Collecting Pool Fees
+| Chain | Incentives |
+| ----- | ---------- |
+| Terra | `terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x` |
+| Neutron | `neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch` |
 
-Use for collecting swap fees from a pool.
+## Claiming Incentive Rewards
 
-<CH.Section>
-    <CH.Scrollycoding>
+`claim_rewards` pays out your pending rewards for one or more staked LP tokens. Each entry is an LP token denom or CW20 LP contract address.
 
-        ### `collect`
+```json
+{
+  "claim_rewards": {
+    "lp_tokens": [
+      "terra1s275y73lfupag0g03nglxaedfnsw5z4m5zc9wk66guy503zuw5ss889tlx"
+    ]
+  }
+}
+```
 
-        To collect swap fees, you need to execute a contract message pointing to the [`collect`](../../smart-contracts/tokenomics/maker#collect) endpoint in the [`Maker`](../../smart-contracts/tokenomics/maker) contract. 
+```js
+const incentives = "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x";
 
-        `collect` takes in a vector of objects containing information about each asset in our pair. 
+await signingClient.execute(
+  sender,
+  incentives,
+  {
+    claim_rewards: {
+      lp_tokens: ["terra1s275y73lfupag0g03nglxaedfnsw5z4m5zc9wk66guy503zuw5ss889tlx"],
+    },
+  },
+  "auto"
+);
+```
 
-        The code in this section collects swap fees for the ASTRO-LUNA pool.
+Staking more (`deposit`) and unstaking (`withdraw`) also pay out pending rewards, so you don't need to claim before either.
 
-        ```json 
-        {
-          "collect": {
-            "assets": [
-              {
-                "info": {
-                  "token": {
-                    "contract_addr": astroAddress
-                  }
-                }
-              }, 
-              {
-                "info": {
-                  "native_token": {
-                    "denom": "uluna"
-                  }
-                }
-              }
-            ]
+### Checking Pending Rewards
+
+```json
+{
+  "pending_rewards": {
+    "lp_token": "terra1s275y73lfupag0g03nglxaedfnsw5z4m5zc9wk66guy503zuw5ss889tlx",
+    "user": "terra1...you"
+  }
+}
+```
+
+The response lists each reward asset and amount:
+
+```json
+[
+  {
+    "info": {
+      "native_token": {
+        "denom": "ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B"
+      }
+    },
+    "amount": "1234567"
+  }
+]
+```
+
+## Where Rewards Come From
+
+Anyone can fund rewards for a pool's stakers by adding an incentive schedule with `incentivize`. Schedules run in weekly periods that start on Monday 00:00 UTC: a new schedule starts immediately and runs until the next Monday plus `duration_periods` weeks (1 to 25).
+
+```json
+{
+  "incentivize": {
+    "lp_token": "terra1s275y73lfupag0g03nglxaedfnsw5z4m5zc9wk66guy503zuw5ss889tlx",
+    "schedule": {
+      "reward": {
+        "info": {
+          "native_token": {
+            "denom": "uluna"
           }
-        }
-        ```
+        },
+        "amount": "10000000000"
+      },
+      "duration_periods": 2
+    }
+  }
+}
+```
 
+- For a native reward, attach the reward amount as funds. For a CW20 reward, first `increase_allowance` for the Incentives contract; Incentives pulls the tokens with `transfer_from`.
+- The reward must pay at least 1 base unit per second over the schedule.
+- A pool can have up to 5 external reward tokens at a time.
+- **Incentivization fee.** Adding a reward token that the pool doesn't have yet costs a fee, also attached as funds. On both chains it is currently 1,500 ASTRO (`1500000000` in base units of the chain's ASTRO denom) and goes to the Maker. Check `incentivization_fee_info` in the Incentives `config` query. Adding to a reward token the pool already has (while its schedule is still running), or rewarding in ASTRO, needs no fee. Once a token's schedules have all ended it is removed from the pool, and the next schedule in that token counts as new again. On Terra, addresses on the fee exemption list (`fee_exemptions` query), such as the yASTRO contract, don't pay it either.
 
-    </CH.Scrollycoding>
-</CH.Section>
+To check whether a schedule will need the fee:
 
-## Collecting LP Rewards
+```json
+{
+  "is_fee_expected": {
+    "lp_token": "terra1s275y73lfupag0g03nglxaedfnsw5z4m5zc9wk66guy503zuw5ss889tlx",
+    "reward": "uluna"
+  }
+}
+```
 
-Use for collecting LP rewards from the Generator contract. 
+On Terra (Incentives 1.5.0) you can add `"sender": "terra1..."` to take fee exemptions into account. Neutron's Incentives (1.4.0) doesn't accept `sender`.
 
-<CH.Section>
-    <CH.Scrollycoding>
+To see a pool's current rewards, query `pool_info` with the LP token. Each entry in `rewards` has the reward asset and its `rps` (reward units per second for the whole pool); `total_lp` is the amount staked.
 
-        ### `claim_rewards`
+```json
+{
+  "pool_info": {
+    "lp_token": "terra1s275y73lfupag0g03nglxaedfnsw5z4m5zc9wk66guy503zuw5ss889tlx"
+  }
+}
+```
 
-        If you have staked your LP tokens into the Generator contract, and your pool is eligible for ASTRO or 3rd party emissions, then you can collect rewards from the Generator contract in addition to swap fees. 
+### yASTRO Rewards for Pools
 
-        To claim rewards, you have to execute a contract message to the [`claim_rewards`](../../smart-contracts/tokenomics/generator#claim_rewards) endpoint in the [`Generator`](../../smart-contracts/tokenomics/generator) contract and specify the addresses of the `lp_tokens` you want to claim rewards for. 
+On Terra, a pool that holds yASTRO earns USDC.inj rewards like any yASTRO holder. Anyone can move them to the pool's stakers by calling `forward_pool_rewards` on the [yASTRO contract](/docs/develop/smart-contracts/tokenomics/yastro) (`terra1fe8uj96z7f4jfsnkrdxhchxdhdtx8alr9zjqze76hm2ga6tpxjjq5rdjw7`):
 
-        ```json 
-        {
-          "claim_rewards": {
-            "lp_tokens": [
-              astrolunaLPAddress
-            ]
-          }
-        }
-        ```
-    </CH.Scrollycoding>
-</CH.Section>
+```json
+{
+  "forward_pool_rewards": {
+    "pool": "terra1...pool"
+  }
+}
+```
+
+It turns the pool's accrued rewards into an Incentives schedule on that pool's LP token, so only LP tokens staked in Incentives earn them. It needs at least 1% of the pool's LP supply to be staked in Incentives; until then the rewards stay pending.
+
+## Protocol Fees
+
+The Maker's share of swap fees is not paid to liquidity providers. On Neutron it buys ASTRO that is burned; on Terra it is split between buying ASTRO to burn, the Development Fund and yASTRO stakers. Anyone can trigger the Maker's `collect`, but it never pays the caller. See [Maker](/docs/develop/smart-contracts/tokenomics/maker).
+
+## Links
+
+- [Staking/Unstaking LP Tokens](staking-unstaking-lp-tokens)
+- [Incentives contract](/docs/develop/smart-contracts/tokenomics/incentives)
+- [yASTRO](/docs/develop/smart-contracts/tokenomics/yastro)
+- [Contract Addresses](/docs/develop/smart-contracts/contract-addresses)

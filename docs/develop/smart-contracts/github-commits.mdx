@@ -2,138 +2,37 @@
 sidebar_position: 2
 ---
 
-# GitHub Commits
+# Source Code and Versions
 
-## Injective
+## Repositories
 
-The following are the GitHub commits for the Astroport `injective-1` mainnet deployment.
+- **astroport-core** (https://github.com/astroport-fi/astroport-core): factory, pools, router, Maker, ASTRO burner, yASTRO, Incentives, Vesting, xASTRO staking, xASTRO payout and the periphery contracts.
+- **astroport-governance** (https://github.com/astroport-fi/astroport-governance): the Assembly, the satellite, builder unlock and the retired governance contracts (vxASTRO, emissions controller, tributes).
+- **astroport-changelog** (https://github.com/astroport-fi/astroport-changelog): deployment history.
 
-```json
-{
-    "astro_token_commit": "https://github.com/astroport-fi/astroport-core/commit/874f5e7fa38e735c1c9ce5b15e737868c7b31e49",
-    "factory_commit": "https://github.com/astroport-fi/astroport-core/commit/874f5e7fa38e735c1c9ce5b15e737868c7b31e49",
-    "router_commit": "https://github.com/astroport-fi/astroport-core/commit/874f5e7fa38e735c1c9ce5b15e737868c7b31e49",
-    "maker_commit": "https://github.com/astroport-fi/astroport-core/commit/874f5e7fa38e735c1c9ce5b15e737868c7b31e49",
-    "vesting_commit": "https://github.com/astroport-fi/astroport-core/commit/874f5e7fa38e735c1c9ce5b15e737868c7b31e49",
-    "generator_commit": "https://github.com/astroport-fi/astroport-core/commit/874f5e7fa38e735c1c9ce5b15e737868c7b31e49",
-    "constant_product_pair_commit": "https://github.com/astroport-fi/astroport-core/commit/874f5e7fa38e735c1c9ce5b15e737868c7b31e49",
-    "stable_pair_commit": "https://github.com/astroport-fi/astroport-core/commit/874f5e7fa38e735c1c9ce5b15e737868c7b31e49",
-    "coin_registry_commit": "https://github.com/astroport-fi/astroport_core/commit/874f5e7fa38e735c1c9ce5b15e737868c7b31e49",
-    "satellite_commit": "https://github.com/astroport-fi/astroport_ibc/commit/a1ad1ea0d6b89e0f428375ce2daf99d7d320f839",
-}
-```
+## Live versions
 
-The following are the GitHub commits for the Astroport `injective-888` testnet deployment.
+Each contract's version on chain is listed on [Contract Addresses](./contract-addresses). This table maps the live contracts to their source in astroport-core:
 
-```json 
-{
-    "astro_token_commit": "https://github.com/astroport-fi/astroport-core/commit/874f5e7fa38e735c1c9ce5b15e737868c7b31e49",
-    "factory_commit": "https://github.com/astroport-fi/astroport-core/commit/874f5e7fa38e735c1c9ce5b15e737868c7b31e49",
-    "router_commit": "https://github.com/astroport-fi/astroport-core/commit/874f5e7fa38e735c1c9ce5b15e737868c7b31e49",
-    "maker_commit": "https://github.com/astroport-fi/astroport-core/commit/874f5e7fa38e735c1c9ce5b15e737868c7b31e49",
-    "vesting_commit": "https://github.com/astroport-fi/astroport-core/commit/874f5e7fa38e735c1c9ce5b15e737868c7b31e49",
-    "generator_commit": "https://github.com/astroport-fi/astroport-core/commit/874f5e7fa38e735c1c9ce5b15e737868c7b31e49",
-    "constant_product_pair_commit": "https://github.com/astroport-fi/astroport-core/commit/874f5e7fa38e735c1c9ce5b15e737868c7b31e49",
-    "stable_pair_commit": "https://github.com/astroport-fi/astroport-core/commit/874f5e7fa38e735c1c9ce5b15e737868c7b31e49",
-    "coin_registry_commit": "https://github.com/astroport-fi/astroport_core/commit/874f5e7fa38e735c1c9ce5b15e737868c7b31e49",
-    "satellite_commit": "https://github.com/astroport-fi/astroport_ibc/commit/a1ad1ea0d6b89e0f428375ce2daf99d7d320f839",
-}
-```
+| Contract | Crate | Source | Live version |
+| :-- | :-- | :-- | :-- |
+| Factory | `astroport-factory` | `contracts/factory` | Terra 1.8.0, Neutron 1.9.0 |
+| Router 2.0 | `astroport-router` | `contracts/router` | 2.0.0 |
+| Maker | `astroport-maker` | `contracts/tokenomics/maker` | 2.0.0 |
+| ASTRO burner | `astroport-astro-burner` | `contracts/tokenomics/astro_burner` | 1.0.0 (Neutron) |
+| yASTRO | `astroport-yastro` | `contracts/tokenomics/yastro` | 1.0.0 (Terra) |
+| Incentives | `astroport-incentives` | `contracts/tokenomics/incentives` | Terra 1.5.0, Neutron 1.4.0 |
+| Vesting | `astroport-vesting` | `contracts/tokenomics/vesting` | 1.4.0 |
+| Exit-only pools | `astroport-pair-exit-only` | `contracts/pair_exit_only` | 1.0.0 (Neutron) |
+| ASTRO converter pools | `astroport-pair-converter` | `contracts/pair_astro_converter` | 1.1.0 |
+| Native coin registry | `astroport-native-coin-registry` | `contracts/periphery/native_coin_registry` | 1.1.0 |
+| Neutron Treasury | `astroport-whitelist` | `contracts/whitelist` | 2.0.0 |
+| xASTRO staking (retired) | `astroport-staking` | `contracts/tokenomics/staking` | 2.3.3 (Neutron) |
+| xASTRO payout (finished) | `astroport-xastro-payout` | `contracts/tokenomics/xastro_payout` | 1.0.0 |
 
-## Terra 2.0
+Router 1.3.1 and older pool versions come from earlier releases of astroport-core.
 
-The following are the GitHub commits for the Astroport `phoenix-1` mainnet deployment.
+## Checking a deployed contract
 
-```json
-{
-  "astro_token_commit": "https://github.com/astroport-fi/astroport-core/tree/c216ecd4f350113316be44d06a95569f451ac681",
-  "astro_airdrop_commit": "https://github.com/astroport-fi/astroport-bootstrapping/commit/42664661f35ba5bca24682fb2d2470356817e00a",
-  "astro_buider_unlock_commit": "https://github.com/astroport-fi/astroport-governance/commit/db7464032cf7b377facb76c3f82dea20cb111d4c",
-  "factory_commit": "https://github.com/astroport-fi/astroport-core/commit/126d43216111df786472fe2a845c1e2fadfe4a36",
-  "router_commit": "https://github.com/astroport-fi/astroport-core/tree/c216ecd4f350113316be44d06a95569f451ac681",
-  "maker_commit": "https://github.com/astroport-fi/astroport-core/tree/c216ecd4f350113316be44d06a95569f451ac681",
-  "assembly_commit": "https://github.com/astroport-fi/astroport-governance/commit/b52bbd4b54ff1efe6c733316c3d8ef1f8e3f434a",
-  "assembly_treasury_commit": "https://github.com/astroport-fi/astroport-core/tree/c216ecd4f350113316be44d06a95569f451ac681",
-  "vesting_commit": "https://github.com/astroport-fi/astroport-core/tree/c216ecd4f350113316be44d06a95569f451ac681",
-  "generator_commit": "https://github.com/astroport-fi/astroport-core/commit/126d43216111df786472fe2a845c1e2fadfe4a36",
-  "staking_commit": "https://github.com/astroport-fi/astroport-core/commit/d67e1f5289b6ffb6a557748eca7eb1e061ce87a5",
-  "xastro_token_commit": "https://github.com/astroport-fi/astroport-core/tree/c216ecd4f350113316be44d06a95569f451ac681",
-  "constant_product_pair_commit": "https://github.com/astroport-fi/astroport-core/commit/7bedc6f27e59ef8b921a0980be9bc30c4aab7459",
-  "stable_pair_commit": "https://github.com/astroport-fi/astroport-core/tree/c216ecd4f350113316be44d06a95569f451ac681",
-  "generator_proxy_to_mirror_commit": "https://github.com/astroport-fi/astroport-core/tree/c216ecd4f350113316be44d06a95569f451ac681"
-}
-```
-
-The following are the GitHub commits for the Astroport `pisco-1` testnet deployment.
-
-```json
-{
-  "astro_token_commit": "https://github.com/astroport-fi/astroport-core/tree/c216ecd4f350113316be44d06a95569f451ac681",
-  "ibc_controller_commit": "https://github.com/astroport-fi/astroport_ibc/commit/fdbce9ff317216ef939560e81be7811bbf4fcfa0",
-  "builder_unlock_commit": "https://github.com/astroport-fi/astroport-governance/commit/098c992f47b2c8be1110fd7f5a36a7e0b9598d29",
-  "factory_commit": "https://github.com/astroport-fi/astroport-core/commit/042b0768951422099f5d77224c320978cbfa92cc",
-  "router_commit": "https://github.com/astroport-fi/astroport-core/commit/042b0768951422099f5d77224c320978cbfa92cc",
-  "maker_commit": "https://github.com/astroport-fi/astroport-core/commit/042b0768951422099f5d77224c320978cbfa92cc",
-  "assembly_commit": "https://github.com/astroport-fi/astroport-core/commit/88580c6249222f276819811c907ebda4d8c18941",
-  "assembly_treasury_commit": "https://github.com/astroport-fi/astroport-core/tree/c216ecd4f350113316be44d06a95569f451ac681",
-  "vesting_commit": "https://github.com/astroport-fi/astroport-core/commit/042b0768951422099f5d77224c320978cbfa92cc",
-  "generator_commit": "https://github.com/astroport-fi/astroport-core/commit/f3f7723b3103be23c02f2cb0874e79254e83f4e2",
-  "staking_commit": "https://github.com/astroport-fi/astroport-core/tree/c216ecd4f350113316be44d06a95569f451ac681",
-  "xastro_token_commit": "https://github.com/astroport-fi/astroport-core/tree/c216ecd4f350113316be44d06a95569f451ac681",
-  "constant_product_pair_commit": "https://github.com/astroport-fi/astroport-core/commit/7bedc6f27e59ef8b921a0980be9bc30c4aab7459",
-  "stable_pair_commit": "https://github.com/astroport-fi/astroport-core/tree/c216ecd4f350113316be44d06a95569f451ac681",
-  "generator_proxy_to_mirror_commit": "https://github.com/astroport-fi/astroport-core/tree/6d96537b2893d23ce848193698186876bb552cb1",
-  "coin_registry_commit": "https://github.com/astroport-fi/astroport-core/commit/042b0768951422099f5d77224c320978cbfa92cc"
-}
-```
-
-## Terra Classic
-
-The following are the GitHub commits for the Astroport Classic `columbus-5` mainnet deployment.
-
-```json
-{
-  "astro_token_commit": "https://github.com/astroport-fi/astroport-core/commit/a9efa52922c33bf60bfd2623d009ca72f5fb21a5",
-  "factory_commit": "https://github.com/astroport-fi/astroport-core/commit/0ed3a81c70082e6e04557404272d0f705c816f80",
-  "router_commit": "https://github.com/astroport-fi/astroport-core/commit/c4dc11fc8157a78697c05a9e85e698045570e74a",
-  "maker_commit": "https://github.com/astroport-fi/astroport-core/commit/dd1e682f196dd0e3d382fda7bea6737f104f39c7",
-  "astral_assembly_commit": "https://github.com/astroport-fi/astroport-governance/commit/97992e690e728bde16ee0fb99d8d7b0f41cbb492",
-  "assembly_treasury_commit": "https://github.com/astroport-fi/astroport-core/commit/973aab9419229cb221023066f96b18f2edf75ba8",
-  "vesting_commit": "https://github.com/astroport-fi/astroport-core/commit/76e8f556f1aab91af94439d2f5d7ac9a6d6c7c23",
-  "generator_commit": "https://github.com/astroport-fi/astroport-core/commit/ee098672c3e4ebb6655d29aa96382e86437b4a3e",
-  "staking_commit": "https://github.com/astroport-fi/astroport-core/commit/dd1e682f196dd0e3d382fda7bea6737f104f39c7",
-  "xastro_token_commit": "https://github.com/astroport-fi/astroport-core/commit/dd1e682f196dd0e3d382fda7bea6737f104f39c7",
-  "lockdrop_commit": "https://github.com/astroport-fi/astroport-bootstrapping/commit/c247513cc50e30ac2f7b5f2518caf555584a7cf1",
-  "airdrop_commit": "https://github.com/astroport-fi/astroport-bootstrapping/commit/c247513cc50e30ac2f7b5f2518caf555584a7cf1",
-  "auction_commit": "https://github.com/astroport-fi/astroport-bootstrapping/commit/c247513cc50e30ac2f7b5f2518caf555584a7cf1",
-  "constant_product_pair_commit": "https://github.com/astroport-fi/astroport-core/commit/0ed3a81c70082e6e04557404272d0f705c816f80",
-  "stable_pair_commit": "https://github.com/astroport-fi/astroport-core/commit/0ed3a81c70082e6e04557404272d0f705c816f80",
-  "generator_proxy_to_mirror_commit": "https://github.com/astroport-fi/astro-generator-proxy-contracts/commit/e9b18aeb998f0fb7b869f622cc3fbc70ea2c2582"
-}
-```
-
-The following are the GitHub commits for the Astroport Classic `bombay-12` testnet deployment.
-
-```json
-{
-  "astro_token_commit": "https://github.com/astroport-fi/astroport-core/commit/a9efa52922c33bf60bfd2623d009ca72f5fb21a5",
-  "factory_commit": "https://github.com/astroport-fi/astroport-core/commit/0ed3a81c70082e6e04557404272d0f705c816f80",
-  "router_commit": "https://github.com/astroport-fi/astroport-core/commit/c4dc11fc8157a78697c05a9e85e698045570e74a",
-  "maker_commit": "https://github.com/astroport-fi/astroport-core/commit/dd1e682f196dd0e3d382fda7bea6737f104f39c7",
-  "astral_assembly_commit": "https://github.com/astroport-fi/astroport-governance/commit/085a98b07065124dde7a386a28687c6ee96ba66f",
-  "assembly_treasury_commit": "https://github.com/astroport-fi/astroport-core/commit/973aab9419229cb221023066f96b18f2edf75ba8",
-  "vesting_commit": "https://github.com/astroport-fi/astroport-core/commit/76e8f556f1aab91af94439d2f5d7ac9a6d6c7c23",
-  "generator_commit": "https://github.com/astroport-fi/astroport-core/commit/dbe050260b111e927a8282217c882b05e0632bea",
-  "staking_commit": "https://github.com/astroport-fi/astroport-core/commit/dd1e682f196dd0e3d382fda7bea6737f104f39c7",
-  "xastro_token_commit": "https://github.com/astroport-fi/astroport-core/commit/dd1e682f196dd0e3d382fda7bea6737f104f39c7",
-  "vxastro_token_commit": "https://github.com/astroport-fi/astroport-governance/commit/c7d88dc2bdb2e1b5ba1bf7ba9de0dd92046d8479",
-  "vxastro_fee_distributor_commit": "https://github.com/astroport-fi/astroport-governance/commit/c7d88dc2bdb2e1b5ba1bf7ba9de0dd92046d8479",
-  "lockdrop_commit": "https://github.com/astroport-fi/astroport-bootstrapping/commit/31be27283ebe0473898000268d1a75cba3960062",
-  "airdrop_commit": "https://github.com/astroport-fi/astroport-bootstrapping/commit/c247513cc50e30ac2f7b5f2518caf555584a7cf1",
-  "auction_commit": "https://github.com/astroport-fi/astroport-bootstrapping/commit/c247513cc50e30ac2f7b5f2518caf555584a7cf1",
-  "constant_product_pair_commit": "https://github.com/astroport-fi/astroport-core/commit/0ed3a81c70082e6e04557404272d0f705c816f80",
-  "stable_pair_commit": "https://github.com/astroport-fi/astroport-core/commit/0ed3a81c70082e6e04557404272d0f705c816f80",
-  "bluna_luna_pair_commit": "https://github.com/astroport-fi/astroport-core/commit/0efe86e258f432cf6c777370b59fce7263b46fc5",
-  "generator_proxy_to_mirror_commit": "https://github.com/astroport-fi/astro-generator-proxy-contracts/commit/e9b18aeb998f0fb7b869f622cc3fbc70ea2c2582"
-}
-```
+- **Version:** every Astroport contract stores its name and version under the `cw2` key `contract_info`. Query it as raw contract state, for example `neutrond query wasm contract-state raw <address> 636F6E74726163745F696E666F` (the hex of `contract_info`), or through any explorer's contract page.
+- **Code:** `neutrond query wasm contract <address>` (or `terrad`) returns the code ID and the wasm admin. `query wasm code-info <code_id>` returns the code's checksum, which you can compare with the SHA-256 of a wasm built with the optimizer from the tagged source.

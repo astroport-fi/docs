@@ -4,49 +4,129 @@ sidebar_position: 3
 
 import Admonition from '@theme/Admonition'
 
-import Terra2AllocationUrl from '@site/static/img/tokenomics/astro-alloc.png';
-
 # Astroport FAQ
 
 ## Overview
 
-Find some of the most frequently asked questions around Astroport. Do you still have a question that is not addressed below? You can find more information by searching the AstroDocs or by joining the [Astroport Discord](https://discord.astroport.fi) to engage with other community members.
+Find some of the most frequently asked questions around Astroport. Do you still have a question that is not addressed below? You can find more information by searching the docs or by joining the [Astroport Discord](https://discord.astroport.fi) to engage with other community members.
+
+## Long-Term Support FAQ
+
+### What does long-term support (LTS) mean?
+
+<Admonition type="info" title="NOTE">
+    The Astroport contracts on Terra and Neutron and the app at app.astroport.fi stay live. Security fixes come first, and no new features are planned beyond what LTS needs. Governance is retired and there are no ASTRO emissions. Protocol fees go to ASTRO burns, yASTRO stakers and the Development Fund. Read more in [Long-Term Support](/docs/learn/long-term-support).
+</Admonition>
+
+### Which chains does Astroport support?
+
+<Admonition type="info" title="NOTE">
+    Terra (phoenix-1) and Neutron (neutron-1). Sei, Injective, Osmosis and Terra Classic are no longer supported by Astroport.
+</Admonition>
+
+### What happened on Neutron in September 2026?
+
+<Admonition type="info" title="NOTE">
+    On 2026-09-22, a Neutron governance proposal (Neutron prop 9) took control of eight Astroport contracts on Neutron and drained 370.3M ASTRO from xASTRO staking, plus the assets of six pools. Neutron halted and restarted on 2026-09-25, and the funds were returned to a recovery multisig. The recovery was completed by 2026-11-03. See [Long-Term Support](/docs/learn/long-term-support#september-2026-neutron-incident-and-recovery).
+</Admonition>
+
+### Who runs Astroport now?
+
+<Admonition type="info" title="NOTE">
+    An "Astroport - Contributors" DAO on each chain, built on DAO DAO. On Neutron it acts through the Assembly contract and on Terra through the satellite contract, which remain the owners of the protocol contracts. Emergency multisigs remain as emergency owners, and the Astroport Development Fund DAOs pay for infrastructure and security. See [Who runs the protocol](/docs/learn/long-term-support#who-runs-the-protocol).
+</Admonition>
+
+## xASTRO FAQ
+
+### What happened to my xASTRO?
+
+<Admonition type="info" title="NOTE">
+    xASTRO is retired. It has no value and can't be redeemed, and xASTRO staking no longer accepts deposits or withdrawals. Every wallet that held xASTRO before the incident was paid in ASTRO instead.
+</Admonition>
+
+### At what rate were xASTRO holders paid?
+
+<Admonition type="info" title="NOTE">
+    1.3402 ASTRO per xASTRO: exactly 370,318,691.388430 ASTRO / 276,322,268.374898 xASTRO, the rate at Neutron block 61,633,114, before the incident. Terra balances were taken at Terra block 22,948,000.
+</Admonition>
+
+### Do I need to claim my xASTRO payout?
+
+<Admonition type="info" title="NOTE">
+    No. The payouts were sent automatically and are finished: 1,788 wallets on Neutron received 327.3M ASTRO (including refunds of 4.99M ASTRO to people who deposited after the incident) and 57 wallets on Terra received 47.9M ASTRO. xASTRO held through contracts (vaults, LP positions, ve3, Eclipse) was looked through and paid to the underlying wallets. DAOs were paid at their own addresses.
+</Admonition>
+
+### What about vxASTRO?
+
+<Admonition type="info" title="NOTE">
+    vxASTRO no longer votes or directs emissions. Existing positions simply unwind through their normal unlock.
+</Admonition>
+
+## yASTRO FAQ
+
+### What is yASTRO?
+
+<Admonition type="info" title="NOTE">
+    yASTRO is staked ASTRO on Terra. Stake ASTRO at [app.astroport.fi/yastro](https://app.astroport.fi/yastro) and receive yASTRO 1:1. Each week a quarter of Terra's protocol fees is paid to yASTRO holders in USDC.inj. yASTRO has no governance role. See [yASTRO](/docs/learn/yastro).
+</Admonition>
+
+### How are yASTRO rewards paid?
+
+<Admonition type="info" title="NOTE">
+    The Terra Maker deposits USDC.inj every Sunday night. Each week's deposits stream per second over the following week (weeks start Monday 00:00 UTC) to yASTRO holders, pro rata to their balance. Claim them at any time from the Rewards Center in the app.
+</Admonition>
+
+### How long does unstaking take?
+
+<Admonition type="info" title="NOTE">
+    7 days. Unbonding ASTRO earns nothing. Once the 7 days have passed, withdraw your ASTRO in the app.
+</Admonition>
+
+### Is yASTRO available on Neutron?
+
+<Admonition type="info" title="NOTE">
+    No, yASTRO is on Terra only. Neutron's protocol fees are used entirely to buy and burn ASTRO.
+</Admonition>
 
 ## Token FAQ
 
-### What is the difference between ASTROC & ASTRO?
+### What is the ASTRO supply?
 
 <Admonition type="info" title="NOTE">
-    Astroport initially launched on the original Terra network (Terra Classic), with is governed by the ASTROC (ASTRO Classic) token. With the launch of Astroport on the Terra 2 network, a new governance token has been minted, called ASTRO.
-
-    There is no bridge between ASTROC and ASTRO, and each set of tokens governs the deployment on its respective chain. In other words, ASTROC tokens have no governance power over Astroport on Neutron, Terra, Injective, Sei or Osmosis, and ASTRO tokens have no governance power on Astroport on Terra Classic.
+    The supply started at 1,000,000,000 ASTRO and was 696,235,077.66 ASTRO on 2026-11-04. It only goes down: ASTRO can't be minted anymore (the denom admin is the ASTRO burner contract, which can only burn), and protocol fees buy and burn ASTRO every week. See [Supply and Allocation](/docs/learn/astro-tokenomics/allocation).
 </Admonition>
 
-### What is the token distribution for ASTRO?
+### Are there still ASTRO emissions?
 
 <Admonition type="info" title="NOTE">
-    The token distribution ensures that the wider community will have a majority say in everything on Astroport. Originally, the community held 110M ASTROC after the [lockdrop on Terra Classic](https://astroport.medium.com/hello-astro-announcing-the-astroport-governance-token-drops-a07a1bf3ed94). 49% of the supply of 1B ASTROC went to liquidity rewards for 69 years.10% of the supply was reserved for the Astral Assembly. The rest is allocated to Astroport Builders, who have a 3-year lock-up period.
-
-    When Astroport launched on Terra 2, the supply of the new ASTRO token was increased from 1 billion to 1.1 billion. The additional 100 million tokens are to be exclusively used to incentivize liquidity.
+    No. ASTRO emissions to pools have ended. Anyone can still add external incentives to a pool. See [Astro Incentives](/docs/learn/astro-incentives).
 </Admonition>
 
-<img src={Terra2AllocationUrl} style={{ paddingBottom: 15 }} />
-
-### What is the unlock schedule for the Builder Tokens?
+### Can I still vote with ASTRO?
 
 <Admonition type="info" title="NOTE">
-    The Builder Tokens unlock over three years; for both ASTROC and ASTRO. Both sets of tokens were scheduled to begin unlocking on December 14, 2022. Due to the completed legal and upcoming smart contract amendments, the unlocks will now [begin on July 1, 2023](https://astroport.medium.com/astroport-builders-delay-governance-token-unlocks-by-six-months-26c3e1f36fb5).
+    No. Astroport governance is retired: there is no ASTRO, xASTRO or vxASTRO voting, no token holder proposals, no emissions voting and no tributes (bribes).
+</Admonition>
 
-    On that date, one-third of builder tokens will unlock on both chains, and the remaining two-thirds will begin unlocking on a linear daily basis over the following 24 months.
+### Which ASTRO do I need on Terra?
+
+<Admonition type="info" title="NOTE">
+    The IBC ASTRO from Neutron (`ibc/8D8A7F7253615E5F76CB6252A1E1BD921D5EDB7BBAAF8913FB1C77FF125D9995`). The old ASTRO CW20 on Terra is legacy, and converting it to IBC ASTRO no longer works.
+</Admonition>
+
+### What is the difference between ASTROC and ASTRO?
+
+<Admonition type="info" title="NOTE">
+    Astroport initially launched on the original Terra network (Terra Classic) with the ASTROC (ASTRO Classic) token. ASTRO was launched later and is a separate token; there is no bridge between them. Astroport no longer supports Terra Classic.
 </Admonition>
 
 ### Was there an ICO?
 
 <Admonition type="info" title="NOTE">
-    Astroport did not have an ICO. Instead, ASTROC was distributed through a lockdrop. ASTRO was distributed through an airdrop to ASTROC holders. To learn more about the lockdrop, look [here](https://astroport.medium.com/hello-astro-announcing-the-astroport-governance-token-drops-a07a1bf3ed94).
+    Astroport did not have an ICO. Instead, ASTROC was distributed through a lockdrop, and ASTRO was distributed through an airdrop to ASTROC holders.
 </Admonition>
 
-### Who was part of the Initial Astro Builders?
+### Who were the Initial Astro Builders?
 
 <Admonition type="info" title="NOTE">
     The development of the protocol occurred through a joint venture involving Delphi Labs, Terraform Labs, Attic Lab and [WE3](https://we3.co/) (a decentralized design collective) and their respective service providers.
@@ -57,7 +137,13 @@ Find some of the most frequently asked questions around Astroport. Do you still 
 ### Can I withdraw trading fees from a pair without withdrawing liquidity?
 
 <Admonition type="info" title="NOTE">
-    In the case of constant product and stableswap pools, you must withdraw your liquidity to get the trading fees you accumulated.
+    No. Trading fees stay in the pool and increase the value of your LP tokens, so you receive them when you withdraw your liquidity.
+</Admonition>
+
+### What is a withdraw-only pool?
+
+<Admonition type="info" title="NOTE">
+    Six Neutron pools drained in the September 2026 incident (dATOM/USDC, NTRN/USDC, dATOM/ATOM, USDC/DYDX, wstETH/WETH and axlUSDC/USDC) were refilled with the returned assets and made withdraw-only. They allow balanced withdrawals only, with no swaps and no deposits. If your LP tokens are staked in Incentives, unstake them first, then withdraw.
 </Admonition>
 
 ### Does the protocol mitigate frontrunning?
@@ -72,63 +158,8 @@ Find some of the most frequently asked questions around Astroport. Do you still 
     Anyone can take out a flashloan from another protocol and then use the borrowed funds to trade on Astroport. Nothing in the Astroport contracts prevents this type of behavior as it is considered valid.
 </Admonition>
 
-## Governance FAQ
-
-### I've submitted a proposal to the Astroport forum. When can I submit an on-chain proposal?
+### How do I report a security issue?
 
 <Admonition type="info" title="NOTE">
-    A community review period is required after submitting a proposal to the Astroport forum. The minimum duration of this period is determined by two variables:
-
-    - Feedback Period: 7 days
-    - Frozen Period: 2 days
-
-    Please note that in the case of UI ARCs, there is no need for a Frozen Period.
-</Admonition>
-
-### How many ASTRO (if any) are required to submit a proposal?
-
-<Admonition type="info" title="NOTE">
-    You must temporarily lock 30,000 xASTRO in order to submit a proposal for a formal vote.
-</Admonition>
-
-### Do proposal submitters lose their xASTRO if their proposal fails?
-
-<Admonition type="info" title="NOTE">
-    Once the voting ends (after ~4 days) proposers get their xASTRO back regardless of the outcome.
-</Admonition>
-
-### Can proposal submitters vote on their own proposal?
-
-<Admonition type="info" title="NOTE">
-    No. The proposal submitter address will not be able to participate in the voting process for their own proposal.
-</Admonition>
-
-### What is the required quorum for a vote?
-
-<Admonition type="info" title="NOTE">
-    10% of votable tokens (circulating xASTRO + locked builder allocation) must participate in order for a proposal to pass.
-</Admonition>
-
-### What happens if a governance vote doesn't reach quorum?
-
-<Admonition type="info" title="NOTE">
-    The proposal fails and can potentially be resubmitted.
-</Admonition>
-
-### What is the voting threshold for a vote to pass?
-
-<Admonition type="info" title="NOTE">
-    To pass, a simple majority is required (50% + 1 vote).
-</Admonition>
-
-### How many times can I resubmit a proposal?
-
-<Admonition type="info" title="NOTE">
-    An AIP can be resubmitted for an on-chain vote up to 3 times without having to go through phases 1-4 of the AIP process again if it failed to pass due to legitimate external reasons (e.g., potential low governance participation that did not meet the minimum on-chain quorum).
-</Admonition>
-
-### What is the cut-off for being able to vote?
-
-<Admonition type="info" title="NOTE">
-    To participate in a vote a wallet address must have held xASTRO 1 block before the proposal was created. 
+    Astroport no longer runs a bug bounty. To report a vulnerability, contact the team on the [Astroport Discord](https://discord.astroport.fi). Don't post details of a vulnerability in public channels. See [Security](./security/security-intro).
 </Admonition>

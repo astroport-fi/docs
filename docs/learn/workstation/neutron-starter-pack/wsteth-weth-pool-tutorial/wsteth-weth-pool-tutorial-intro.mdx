@@ -1,24 +1,17 @@
-# wstETH - WETH Pool Tutorial
+import Admonition from '@theme/Admonition'
+
+# wstETH - WETH Pool
+
+<Admonition type="info" title="Withdraw-only pool">
+The wstETH - WETH pool on Neutron ([neutron1yw0a7nxa8jdgzmdsme4gwxhj76n44z305qgwrzvlfavgna9epcys3k9m2f](https://neutron.celat.one/neutron-1/contracts/neutron1yw0a7nxa8jdgzmdsme4gwxhj76n44z305qgwrzvlfavgna9epcys3k9m2f)) is one of the six pools drained in the September 2026 incident. It was refilled with the returned assets and is now withdraw-only: no swaps and no deposits. LPs can withdraw their share. See [Long-Term Support](../../../long-term-support#september-2026-neutron-incident-and-recovery).
+</Admonition>
 
 ### What is wstETH?
 
-wstETH (wrapped staked Ether) is an auto-compounding version of Lido’s stETH (staked Ether token) which was created to facilitate integrations with other DeFi protocols.
+wstETH (wrapped staked Ether) is an auto-compounding version of Lido's stETH (staked Ether token) which was created to facilitate integrations with other DeFi protocols.
 
 Unlike stETH, wstETH does not rebase: as staking rewards accrue to the liquid staking token, its balance stays constant, but the amount of underlying stETH increases. In other words, the amount of ETH that wstETH can be redeemed for should increase.
 
-### How can I get wstETH?
+### Withdrawing your liquidity
 
-If you own ETH or stETH on Ethereum, you can wrap or stake your tokens to obtain wstETH using the [Lido wrap UI](https://stake.lido.fi/wrap). Otherwise, you can mint wstETH by staking ETH with Lido, or purchase it from [a decentralized exchange](https://lido.fi/lido-ecosystem?tokens=wstETH&categories=Get).
-
-### How can I use wstETH in Cosmos?
-
-There are dozens of projects in Cosmos working on integrating with wstETH, including Astroport and Mars on Neutron, Osmosis and others. Find opportunities on this [ecosystem page](https://www.mintscan.io/neutron/ecosystem). On Astroport, you can supply liquidity to the wstETH - WETH pool to earn trading fees and rewards here: https://neutron.astroport.fi/pools
-
-### Where do I start? 
-
-Jump in below to learn how to: 
-- [Wrap ETH to wstETH Lido](./wrap-eth-on-lido)
-- [Bridge wstETH using the Neutron bridge](bridge-wsteth-to-neutron)
-- [Swap wstETH for WETH](swap-wsteth-for-weth-on-astroport)
-- [Provide Liquidity to the wstETH - WETH pool](provide-liquidity-to-wsteth-weth-pool-on-astroport)
-- [Unstake/Withdraw your liquidity](unstaking-withdrawing-liquidity)
+If you provided liquidity to the wstETH - WETH pool, follow [Unstaking/Withdrawing Liquidity](./unstaking-withdrawing-liquidity) to unstake your LP tokens (if they are staked) and withdraw your share of the pool. Withdrawals are balanced: you receive your share of both wstETH and WETH.

@@ -4,275 +4,165 @@ sidebar_position: 5
 
 import Admonition from '@theme/Admonition'
 
-# Swapping 
+# Swapping with CosmJS
 
-This tutorial will walk you through Astroport's `swap` functionality using CosmJS. 
+## Overview
 
-## Setup 
+This tutorial is a complete script that swaps NTRN for ASTRO in the NTRN/ASTRO pool on Neutron with [CosmJS](https://github.com/cosmos/cosmjs). It simulates the swap, derives a `belief_price` from the simulation and sends the swap.
 
-### Step 1: Import Necessary Libraries
+For an explanation of every parameter, CW20 swaps and Terra examples, see [Swapping](trading/swapping). For routes through several pools, see [Multi-hop Routing](trading/multi-hop-routing).
 
-Import the required libraries to connect to the chain and perform transactions.
-
-<CH.Section>
-    <CH.Code>
-
-        ```js
-        import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
-        import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
-        import { GasPrice } from "@cosmjs/stargate";
-
-        ```
-    </CH.Code>
-</CH.Section>
-
-### Step 2: Define Constants
-
-Specify the required constants, such as the RPC URL, mnemonic, and factory contract address.
+| Name | Value |
+| ---- | ----- |
+| Chain | Neutron (`neutron-1`) |
+| Pool (ASTRO/NTRN) | `neutron1rnz97pgxe0u2a0fduxz4kxape7x32lveu85nl5euf6qhgawkpv7qsmwtd0` |
+| NTRN | `untrn` (6 decimals) |
+| ASTRO | `factory/neutron1ffus553eet978k024lmssw0czsxwr97mggyv85lpcsdkft8v9ufsz3sa07/astro` (6 decimals) |
 
 <Admonition type="info" title="NOTE">
-    This tutorial includes the mnemonic directly in the code for quick setup. While convenient for testing, this exposes a sensitive piece of information and is not secure for production use. Always follow secure key management practices and never expose the mnemonic in real-world scenarios.
+
+This tutorial reads the mnemonic from an environment variable to keep the example short. Use proper key management for anything beyond testing, and never commit a mnemonic.
+
 </Admonition>
 
-<CH.Section>
-    <CH.Code>
+## Step 1: Install the Libraries
 
-        ```js
-        const rpc = '<rpc-url>'
-        const mnemonic = ''
-        const pairContractAddress = 'neutron...' 
-        ```
-    </CH.Code>
-</CH.Section>
-
-### Step 3: Create a Wallet
-
-Create a wallet using the mnemonic for the specific chain prefix.
-
-<CH.Section>
-    <CH.Code>
-
-        ```js
-        const wallet = await DirectSecp256k1HdWallet.fromMnemonic(
-            mnemonic, { 
-                prefix: "neutron" // neutron, or terra
-            });
-        ```
-    </CH.Code>
-</CH.Section>
-
-### Step 4: Retrieve Wallet Address
-
-Get the wallet address from the wallet.
-
-<CH.Section>
-    <CH.Code>
-
-        ```js
-        const firstAccount = await wallet.getAccounts();
-        const walletAddress = firstAccount[0].address
-
-        ```
-    </CH.Code>
-</CH.Section>
-
-### Step 5: Set Up the Signing Client
-Configure the signing client for connecting to the chain.
-
-<CH.Section>
-    <CH.Code>
-
-        ```js
-        const signingClient = await SigningCosmWasmClient.connectWithSigner(
-            rpc, 
-            wallet, 
-            { gasPrice: GasPrice.fromString("0.0053untrn") }
-        )
-        ```
-    </CH.Code>
-</CH.Section>
-
-### Step 6: Wrap Code Inside an Async Function with Error Handling
-
-Wrap the code inside a start() function, marked as async, to handle the asynchronous operations throughout the code. Also, include a try/catch block for robust error handling. This structure enables the use of await with async functions and ensures proper management of any errors that may occur.
-
-<CH.Section>
-    <CH.Code>
-
-        ```js
-        const start = async () => {
-            try {
-                // Place all the code inside this try block
-
-                // ...
-
-            } catch (error) {
-                console.error('An error occurred:', error);
-            }
-        }
-
-        start();
-        ```
-    </CH.Code>
-</CH.Section>
-
-## Swap
-
-Astroport implements the same smart contracts API for swapping across its various pool types (xyk, stable, pcl). The `swap` function performs a direct swap between two assets in a liquidity pool.
-
-### Step 1: Define the Swap Message
-
-Create the swap message with asset details.
-
-<CH.Section>
-    <CH.Code>
-
-        ```js
-        const swapMsg = {
-            "swap": {
-                "offer_asset": {
-                    "info": {
-                        "token": {
-                            "contract_addr": "..."
-                        }
-                    }, 
-                    "amount": "10000000"
-                }, 
-                "ask_asset_info": {
-                    "native_token": {
-                        "denom": "..."
-                    }
-                },
-                "belief_price": beliefPrice, 
-                "max_spread": "0.1",
-                "to": "...."
-            }
-        };
-        ```
-    </CH.Code>
-
-| **Params**      | **Type** | **Description** |
-| ----------- | ----------- | ----------- |
-| [`offer_asset`]   | [`Asset`](#asset)        | Offer asset      |
-| [`ask_asset_info`]  | [`Option<AssetInfo>`](#assetinfo)        | Information about an asset stored in a [`AssetInfo`] struct     |
-| [`belief_price`]   | `Option<Decimal>`        | Belief price     |
-| [`max_spread`]  | `Option<Decimal>`        | The difference between the ask amount before and after the swap operation. If the swap spread exceeds the provided max limit, the swap will fail.  If `belief_price` is provided in combination with `max_spread`, the pool will check the difference between the return amount (using `belief_price`) and the real pool price.      |
-| [`to`]   | `Option<String>`        | Address receiving tokens (if different from sender)     |
-
-</CH.Section>
-
-#### `Asset`
-
-This enum contains asset info and a token amount.
-
-<CH.Section>
-<CH.Code>
-
-
-```json json 
-{
-    "info": {
-        "token": {
-            "contract_addr": "..."
-        }
-    }, 
-    "amount": "100000"
-}
+```bash
+npm install @cosmjs/cosmwasm-stargate @cosmjs/proto-signing @cosmjs/stargate
 ```
 
-```rust asset.rs
-#[cw_serde]
-pub struct Asset {
-    pub info: AssetInfo,
-    pub amount: Uint128,
-}
+## Step 2: Connect
+
+```js
+import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
+import { GasPrice } from "@cosmjs/stargate";
+
+const rpc = "https://neutron-rpc.polkachu.com";
+const pool = "neutron1rnz97pgxe0u2a0fduxz4kxape7x32lveu85nl5euf6qhgawkpv7qsmwtd0";
+const astro = "factory/neutron1ffus553eet978k024lmssw0czsxwr97mggyv85lpcsdkft8v9ufsz3sa07/astro";
+
+const wallet = await DirectSecp256k1HdWallet.fromMnemonic(process.env.MNEMONIC, {
+  prefix: "neutron",
+});
+const [{ address: sender }] = await wallet.getAccounts();
+
+const client = await SigningCosmWasmClient.connectWithSigner(rpc, wallet, {
+  gasPrice: GasPrice.fromString("0.0053untrn"),
+});
 ```
 
-</CH.Code>
+On Terra, use `prefix: "terra"`, the HD path `m/44'/330'/0'/0/0` (`hdPaths: [stringToPath("m/44'/330'/0'/0/0")]` from `@cosmjs/crypto`) and a `uluna` gas price. See [Network](network/network-intro) for endpoints.
 
-| **Params**      | **Type** | **Description** |
-| ----------- | ----------- | ----------- |
-| [`info`](focus://json#2:6)   | [`AssetInfo`](#assetinfo)        | Information about an asset stored in a [`AssetInfo`] struct      |
-| [`amount`](focus://json#7)   | `Uint128`        | A token amount     |
+## Step 3: Simulate the Swap
 
+```js
+const offerAmount = "1000000"; // 1 NTRN, in base units
 
-</CH.Section>
+const sim = await client.queryContractSmart(pool, {
+  simulation: {
+    offer_asset: { info: { native_token: { denom: "untrn" } }, amount: offerAmount },
+    ask_asset_info: { native_token: { denom: astro } },
+  },
+});
 
-#### `AssetInfo`
-
-AssetInfo is a convenience wrapper to represent whether a token is the native one (from a specific chain, like LUNA for Terra) or not. It also returns the contract address of that token.
-
-<CH.Section>
-<CH.Code>
-
-```rust asset.rs
-pub enum AssetInfo {
-    Token { contract_addr: Addr },
-    NativeToken { denom: String },
-}
+console.log(sim); // { return_amount: "...", spread_amount: "...", commission_amount: "..." }
 ```
 
-</CH.Code>
+## Step 4: Derive `belief_price`
 
-| **Variants**      | **Description** |
-| ----------- | ----------- |
-| [`Token`](focus://asset.rs#2)    | Non-native Token        |
-| [`NativeToken`](focus://asset.rs#3)      | Native token       |
+`belief_price` is the offer amount per unit of the return amount, both in base units. It is a decimal string; do not scale it.
 
-</CH.Section>
+```js
+const beliefPrice = (Number(offerAmount) / Number(sim.return_amount)).toFixed(18);
+const maxSpread = "0.01"; // fail if we would receive more than 1% less than the simulation
+```
 
-#### `Simulation` Enpoint
+For example, if the simulation returns `363866` (0.363866 ASTRO) for `1000000` untrn, then `belief_price = 1000000 / 363866 = 2.748264470986571979` and the swap fails if the pool would return less than `363866 * 0.99 = 360227.34`.
 
-Astroport's native solution for calculating the `belief_price` is the [`simulation`](../smart-contracts/swap-pairs/constant-product-pools#simulation) query.
+## Step 5: Swap
 
-The query takes in an `offer_asset` which contains information about the native token and an amount to send.
+Attach the offer amount as funds:
 
-        ```js
-        const simulationQuery = await client.queryContractSmart(
-            pairContract,
-            {
-                "simulation": {
-                    "offer_asset": {
-                    "info": {
-                        "native_token": {
-                        "denom": "uluna"
-                        }
-                    },
-                    "amount": "100000"
-                    }
-                }
-            }
-        );
+```js
+const result = await client.execute(
+  sender,
+  pool,
+  {
+    swap: {
+      offer_asset: { info: { native_token: { denom: "untrn" } }, amount: offerAmount },
+      ask_asset_info: { native_token: { denom: astro } },
+      belief_price: beliefPrice,
+      max_spread: maxSpread,
+    },
+  },
+  "auto",
+  "",
+  [{ denom: "untrn", amount: offerAmount }]
+);
 
-        console.log(simulationQuery);
-        ```      
+console.log(result.transactionHash);
+```
 
+## Complete Script
 
-Depending on the token decimal for the assets you are swapping, you may need to normalize the response from the `simulation` query before passing it into your `swap` message. 
+```js
+import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
+import { GasPrice } from "@cosmjs/stargate";
 
+const rpc = "https://neutron-rpc.polkachu.com";
+const pool = "neutron1rnz97pgxe0u2a0fduxz4kxape7x32lveu85nl5euf6qhgawkpv7qsmwtd0";
+const astro = "factory/neutron1ffus553eet978k024lmssw0czsxwr97mggyv85lpcsdkft8v9ufsz3sa07/astro";
 
-        ```js 
-        beliefPrice = String(beliefPrice * 1000000);
-        ```
+const main = async () => {
+  const wallet = await DirectSecp256k1HdWallet.fromMnemonic(process.env.MNEMONIC, {
+    prefix: "neutron",
+  });
+  const [{ address: sender }] = await wallet.getAccounts();
+  const client = await SigningCosmWasmClient.connectWithSigner(rpc, wallet, {
+    gasPrice: GasPrice.fromString("0.0053untrn"),
+  });
 
-### Step 2: Execute Swap 
+  const offerAmount = "1000000"; // 1 NTRN
+  const offerInfo = { native_token: { denom: "untrn" } };
+  const askInfo = { native_token: { denom: astro } };
 
-Execute the swap transaction.
+  const sim = await client.queryContractSmart(pool, {
+    simulation: { offer_asset: { info: offerInfo, amount: offerAmount }, ask_asset_info: askInfo },
+  });
 
-<CH.Section>
-    <CH.Code>
+  const beliefPrice = (Number(offerAmount) / Number(sim.return_amount)).toFixed(18);
 
-        ```js
-        const executeSwap = await signingClient.execute(
-            walletAddress,
-            pairContractAddress,
-            swapMsg,
-            "auto", // fee
-            "" // memo
-        );
-        
-        console.log(JSON.stringify(executeSwap));
-        ```
-    </CH.Code>
-</CH.Section>
+  const result = await client.execute(
+    sender,
+    pool,
+    {
+      swap: {
+        offer_asset: { info: offerInfo, amount: offerAmount },
+        ask_asset_info: askInfo,
+        belief_price: beliefPrice,
+        max_spread: "0.01",
+      },
+    },
+    "auto",
+    "",
+    [{ denom: "untrn", amount: offerAmount }]
+  );
 
+  console.log(`Swapped. Expected ${sim.return_amount} base units of ASTRO, tx ${result.transactionHash}`);
+};
+
+main().catch((error) => {
+  console.error("Swap failed:", error);
+  process.exit(1);
+});
+```
+
+Run it with `MNEMONIC="..." node swap.mjs`.
+
+## Links
+
+- [Swapping](trading/swapping)
+- [Multi-hop Routing](trading/multi-hop-routing)
+- [Contract Addresses](/docs/develop/smart-contracts/contract-addresses)

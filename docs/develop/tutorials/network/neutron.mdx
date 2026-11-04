@@ -1,0 +1,87 @@
+---
+sidebar_position: 3
+---
+
+# Neutron
+
+## Overview
+
+Neutron (chain ID `neutron-1`) is one of the two chains Astroport runs on, and the home of the ASTRO token. The tutorials use [CosmJS](https://github.com/cosmos/cosmjs), which works with Neutron's default settings.
+
+| Setting | Value |
+| ------- | ----- |
+| Chain ID | `neutron-1` |
+| Address prefix | `neutron` |
+| HD path | `m/44'/118'/0'/0/0` (coin type 118, the CosmJS default) |
+| Fee denom | `untrn` |
+| RPC | `https://neutron-rpc.polkachu.com` |
+| REST (LCD) | `https://neutron-api.polkachu.com` |
+| Explorer | `https://neutron.celat.one/neutron-1/contracts/<address>` (contracts), `https://www.mintscan.io/neutron/address/<address>` (accounts) |
+
+The endpoints are public and run by a third party. For production, run your own node or pick a provider from the [Cosmos chain registry](https://github.com/cosmos/chain-registry). Neutron's minimum gas price changes over time; you can read it from the REST endpoint at `/feemarket/v1/gas_price/untrn`.
+
+## Assets on Neutron
+
+| Asset | Denom |
+| ----- | ----- |
+| NTRN | `untrn` |
+| ASTRO | `factory/neutron1ffus553eet978k024lmssw0czsxwr97mggyv85lpcsdkft8v9ufsz3sa07/astro` |
+| USDC (Noble) | `ibc/B559A80D62249C8AA07A380E2A2BEA6E5CA9A6F079C912C3A9E9B494105E4F81` |
+
+ASTRO is a tokenfactory denom. Its admin is the ASTRO burner contract, which can only burn, so no new ASTRO can be minted. xASTRO on Neutron is retired and can't be staked or redeemed.
+
+## Connecting with CosmJS
+
+```js
+import { CosmWasmClient, SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
+import { GasPrice } from "@cosmjs/stargate";
+
+const rpc = "https://neutron-rpc.polkachu.com";
+
+// Queries
+const client = await CosmWasmClient.connect(rpc);
+
+// Transactions
+const wallet = await DirectSecp256k1HdWallet.fromMnemonic(process.env.MNEMONIC, {
+  prefix: "neutron",
+});
+const signingClient = await SigningCosmWasmClient.connectWithSigner(rpc, wallet, {
+  gasPrice: GasPrice.fromString("0.0053untrn"),
+});
+```
+
+## Querying a Contract
+
+```js
+const router = "neutron1xuh7nqt486gkvkxdwt773fzs5uptxy0ylzehm3spq7rx8r2kaspqzu0hv6"; // Router 2.0.0
+
+const config = await client.queryContractSmart(router, { config: {} });
+console.log(config); // { astroport_factory: "neutron1hptk0k5kng7hjy35vmh009qd5m6l33609nypgf2yc6nqnewduqasxplt4e" }
+```
+
+## Executing a Message
+
+See [Swapping with CosmJS](../swapping) for a complete swap on Neutron. Every execute call has the same shape:
+
+```js
+const [{ address: sender }] = await wallet.getAccounts();
+
+// execute(sender, contract, msg, fee, memo, funds)
+const result = await signingClient.execute(
+  sender,
+  "<contract-address>",
+  { some_message: {} },
+  "auto",
+  "",
+  [{ denom: "untrn", amount: "1000000" }] // native coins to attach, if any
+);
+```
+
+Some Neutron pools are withdraw-only (exit-only) and refuse swaps and deposits. See [Providing/Withdrawing Liquidity](../farming/providing-withdrawing-liquidity#withdraw-only-exit-only-pools) for the list.
+
+## Links
+
+- [Cosmos Chains](cosmos-chains)
+- [Terra](terra-2)
+- [Contract Addresses](/docs/develop/smart-contracts/contract-addresses)

@@ -4,81 +4,133 @@ sidebar_position: 13
 
 # Access Controls and Permissions
 
-This section gives an overview of smart contract access controls for the full Astroport protocol. Many of the contracts on Astroport are both upgradeable (can have their code ID changed) and have an owner that can change certain parameters.
+This page describes who controls the Astroport contracts under long-term support (LTS). It was checked against on-chain state on 2026-11-04.
 
-## Upgradeable Contracts
+## Control model
 
-The following is a list of Astroport smart contracts that can have their code upgraded:
+Token governance is retired: there are no ASTRO, xASTRO or vxASTRO votes and no Assembly proposals by token holders. Instead, the **"Astroport - Contributors" DAO DAO** on each chain controls the protocol. It doesn't own the contracts directly: it executes through the existing protocol owner contracts with `execute_from_multisig`.
 
-- XYK/Constant product pools
-- Stableswap pools
-- Maker contract that swaps fees for ASTRO
-- Lockdrop contract
-- Router contract
-- Factory contract
-- Vesting contract (contract that decreases amount of ASTRO to give to LPs each year via generator)
-- Staking contract for ASTRO → xASTRO
-- Generator contract
-- Treasury contract
-- Assembly contract
+| | Neutron | Terra |
+| :-- | :-- | :-- |
+| Contributors DAO | [neutron1rfxjrha2cqrt92vcx9rfwz3tz287kw4suv6m0je7hcn6sh3l7etscn03mc](https://neutron.celat.one/neutron-1/contracts/neutron1rfxjrha2cqrt92vcx9rfwz3tz287kw4suv6m0je7hcn6sh3l7etscn03mc) | [terra1txh3xyk0yzkhwzwckzh8sswlywrhrvkr2fe97rfmxvt6d2yzjznsynrqnq](https://terrasco.pe/mainnet/address/terra1txh3xyk0yzkhwzwckzh8sswlywrhrvkr2fe97rfmxvt6d2yzjznsynrqnq) |
+| Protocol owner | Assembly (`astro-assembly` 3.0.1) [neutron1ffus553eet978k024lmssw0czsxwr97mggyv85lpcsdkft8v9ufsz3sa07](https://neutron.celat.one/neutron-1/contracts/neutron1ffus553eet978k024lmssw0czsxwr97mggyv85lpcsdkft8v9ufsz3sa07) | Satellite, "Astroport Assembly" on Terra (`astro-satellite` 1.2.0) [terra1k9j8rcyk87v5jvfla2m9wp200azegjz0eshl7n2pwv852a7ssceqsnn7pq](https://terrasco.pe/mainnet/address/terra1k9j8rcyk87v5jvfla2m9wp200azegjz0eshl7n2pwv852a7ssceqsnn7pq) |
+| Emergency multisig | [neutron1ac2fddfcr3ax4ggarhx0vcaj32fmatsx8p5d6a](https://www.mintscan.io/neutron/address/neutron1ac2fddfcr3ax4ggarhx0vcaj32fmatsx8p5d6a) | [terra1alsky8h94xgfz24hsjq3cylw4vykgzrx6jr6sq](https://terrasco.pe/mainnet/address/terra1alsky8h94xgfz24hsjq3cylw4vykgzrx6jr6sq) |
+| Development Fund DAO | [neutron1atj3u6l6t4y90d0csxgn8ax6psyzjxq2rqcrn4qa656ked3ep06sck0s6k](https://neutron.celat.one/neutron-1/contracts/neutron1atj3u6l6t4y90d0csxgn8ax6psyzjxq2rqcrn4qa656ked3ep06sck0s6k) (SubDAO) | [terra19gzq28ktdwsvkqzrr02u705a07hjwqmxse76552x7azxuwsej4nsm200yj](https://terrasco.pe/mainnet/address/terra19gzq28ktdwsvkqzrr02u705a07hjwqmxse76552x7azxuwsej4nsm200yj) |
 
-The ASTRO token and the xASTRO token **cannot** be upgraded.
+- The Contributors DAO is the wasm admin of the protocol owner on its chain (and of itself).
+- The protocol owner (Assembly or satellite) is the `owner` and the wasm admin of almost every other Astroport contract on its chain.
+- The emergency multisigs stay as emergency owners. On Terra, the satellite's `emergency_owner` is the Terra emergency multisig. On both chains the emergency multisig owns the native coin registry and the builder unlock contract.
+- The Development Fund DAOs pay for infrastructure and security. Their admin is the Contributors DAO. The Terra Development Fund receives 50% of Terra fees from the Maker.
 
-## Pool Upgradeability
+## Who admins what
 
-A specific pair (e.g ASTRO/axlUSDC) cannot have both a stableswap and a xyk pool at the same time. If someone creates a xyk for a specific token pair, Astroport governance will have to deregister the pool if the intent was to use stableswap instead. Same thing if someone creates an invalid stableswap and liquidity should go to a xyk instead. **In short, a xyk pool should not be upgraded to a stableswap or vice-versa.**
+"Admin" is the wasm admin, which can migrate the contract to new code. "Owner" is the address the contract itself lets change its configuration.
 
-## Ownable Contracts
+### Neutron
 
-The following is a list of contracts that have an `owner` who can change specific parameters.
+| Contract | Wasm admin | Owner |
+| :-- | :-- | :-- |
+| Assembly | Contributors DAO | |
+| Factory | Assembly | Assembly |
+| Pools created by the factory | Assembly | Factory owner (stableswap and PCL pools can also have their own owner) |
+| Router 1.3.1, Router 2.0.0 | Assembly | no owner |
+| Maker | Assembly | Assembly |
+| ASTRO burner | Assembly | no owner |
+| Incentives | Assembly | Assembly |
+| Vesting | Assembly | Assembly |
+| Treasury (`astroport-whitelist`) | Assembly | Assembly is the whitelist admin |
+| Native coin registry | Assembly | Emergency multisig |
+| ASTRO converter pool | Assembly | |
+| Builder unlock | Emergency multisig | Emergency multisig |
+| xASTRO payout | none (can't be migrated) | Assembly |
+| Liquidity manager | none | no owner |
+| Retired: xASTRO staking, vxASTRO, emissions controller, tributes, Generator | Assembly | |
+| Development Fund SubDAO | Contributors DAO | |
 
-### `Factory`
+### Terra
 
-- Can change general parameters such as the `owner`, `token_code_id`, `fee_address`, `generator_address` and `whitelist_code_id`
-- Can update a pair type's configuration which includes its `code_id`, `pair_type` (stableswap, XYK or custom), `total_fee_bps`, `maker_fee_bps` and whether the pool `is_disabled`
-- Can deregister a pool
-- Can create a brand new pool type
+| Contract | Wasm admin | Owner |
+| :-- | :-- | :-- |
+| Satellite | Contributors DAO | |
+| Factory | Satellite | Satellite |
+| Pools created by the factory | Satellite | Factory owner (stableswap and PCL pools can also have their own owner) |
+| Router 2.0.0 | Contributors DAO | no owner |
+| Router 1.3.1 | Satellite | no owner |
+| Maker | Satellite | Satellite |
+| yASTRO | Satellite | Satellite (also the CW20 marketing address) |
+| Incentives | Satellite | Satellite |
+| Vesting | Satellite | Satellite |
+| Treasury (`cw1-whitelist`) | Satellite | Satellite is the only admin |
+| Native coin registry | Satellite | Emergency multisig |
+| ASTRO CW20 (legacy), ASTRO converter pool | Satellite | |
+| xASTRO payout | none (can't be migrated) | Satellite |
+| Liquidity manager | none | no owner |
+| Builder unlock (moved to Neutron) | Emergency multisig | |
+| Legacy: Generator, xASTRO staking, xASTRO CW20 | Satellite | |
+| Development Fund DAO | Contributors DAO | |
 
-### `Stableswap Pool`
+## Owner powers
 
-- Can update the pool amplification (with `next_amp`) and specify the timestamp until which the current amplification scales to the new one (`next_amp_time`)
-- The owner can change their own address
-- For Terra Classic, the bLUNA specific stableswap can also have its `bluna_rewarder` changed (the contract distributing bLUNA rewards)
+What each owner can change. Contracts not listed have no owner-only configuration.
 
-### `Generator`
+### Factory
 
-- Can set the `alloc_points` for a generator as well as mention whether a generator has dual rewards (and attach a proxy contract for 3rd party rewards)
-- Can add a new generator, specifying its initial `alloc_points` , whether it gets dual rewards or not and the proxy contract used for 3rd party rewards
-- Can update the address of the generator vesting contract
-- The `owner` can change their own address
+- Change `token_code_id`, `fee_address` (the Maker), `generator_address` (the Incentives contract), `whitelist_code_id` and `coin_registry_address`.
+- Add or update a pool type's configuration: `code_id`, fees (`total_fee_bps`, `maker_fee_bps`), `is_disabled`, `is_generator_disabled` and `permissioned`.
+- Deregister a pool (this also deactivates it in Incentives).
+- Transfer ownership (two-step).
 
-### `Maker`
+See [Factory](./factory).
 
-- Can update the factory address, xASTRO staking address, vxASTRO fee distributor address, the percentage of fees going to vxASTRO stakers and the `max_spread` used to swap fee tokens to ASTRO
-- Can update bridge tokens used to swap fee tokens to ASTRO
-- The `owner` can change their own address
+### Pools
 
-### `Vesting`
+- Constant product pools: fee sharing, through `update_config`, by the factory owner.
+- Stableswap pools: amplification changes and fee sharing, by the pool owner or the factory owner.
+- PCL pools: parameter updates and fee sharing, by the pool owner or the factory owner.
+- Exit-only pools: nothing. They only accept balanced withdrawals. See [Exit-only pools](./swap-pairs/exit-only-pools).
 
-- Can add new vesting schedules targeted at different addresses
-- The `owner` can change their own address
+### Maker
 
-### `Treasury`
+- `update_config`: router, base asset, `max_spread`, collect cooldown, `collectors` and legs.
+- `update_routes`: fee token routes to the base asset.
+- `update_seize_config`: the seize receiver and the seizable assets.
+- Transfer ownership (two-step).
 
-- Current treasury admins can change the list of admins
+`collect` and `seize` are permissionless today. See [Maker](./tokenomics/maker).
 
-### `Assembly`
+### yASTRO
 
-- Can change the proposal voting period, the delay between marking a proposal as successful and it being available for execution and the proposal expiration period
-- Can change the amount of xASTRO needed to lock in order to create a proposal, the required voting power quorum needed to pass a vote, the required majority of votes that a proposal needs to have to be successful and the list of whitelisted domains used to sanitize the main link submitted in a proposal
+- Reward denoms (at most 5 ever, never ASTRO), the unbonding period (at most 28 days, for new unbondings), the Incentives address and `min_lp_staked`.
+- The owner can't move staked ASTRO or anyone's rewards.
 
-## Governance Delays
+See [yASTRO](./tokenomics/yastro).
 
-The Astral Assembly enforces a delay between the moment when a proposal is marked as successful and the moment when that proposal can be executed. You can check out the Assembly parameters here.
+### Incentives
 
-## Pausing the Protocol
+- `update_config`: ASTRO token, vesting contract, generator controller, guardian, incentivization fee and token transfer gas limit.
+- `update_fee_exemptions` (Terra 1.5.0): senders that don't pay the incentivization fee.
+- `update_blocked_tokens_list` (owner or guardian), `remove_reward_from_pool`, `claim_orphaned_rewards`.
+- `setup_pools` and `set_tokens_per_second` control ASTRO emissions, which are zero.
 
-Although governance can propose and implement a pause functionality in the protocol, at the moment there are no pause functions per se in any contract. This design decision stems from the fact that Astroport was initially envisioned as an unstoppable protocol which is as close as possible to a public good for the whole Cosmos ecosystem.
+See [Incentives](./tokenomics/incentives).
 
-There are though ways to deregister pools from the Astroport Factory as well as completely stop ASTRO emissions from the Generator contract.
+### Vesting
 
+- Register vesting accounts (paying the tokens in the same call) and withdraw from an account's active schedule.
+- Transfer ownership (two-step).
+
+### ASTRO burner and routers
+
+No owner. The burner can only burn the ASTRO denom it administers; it has no message that mints or changes the denom admin. The routers have no configuration to change.
+
+### Treasuries
+
+The treasury admins can execute messages from the treasury and change the admin list. The only admin is the protocol owner (Assembly or satellite).
+
+## Pausing and emergencies
+
+There is no global pause in the Astroport contracts. The tools available to the protocol owner are:
+
+- disable a pool type or deregister a pool in the factory;
+- restrict `collect` on a Maker to an allowlist (`collectors`);
+- migrate a contract through its wasm admin, as was done after the September 2026 incident: xASTRO staking was paused and retired (`astroport-staking` 2.3.3) and the six drained Neutron pools were migrated to `astroport-pair-exit-only`, which only allows balanced withdrawals.

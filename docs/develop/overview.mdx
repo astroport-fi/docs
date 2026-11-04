@@ -6,8 +6,22 @@ import Cards from '@site/src/components/Cards';
 
 # Develop
 
-Expand your developer skills and explore the exciting realm of Astroport's code base with detailed explanations and tutorials.
+Expand your developer skills and explore Astroport's code base with detailed explanations and tutorials.
 
 <Cards
     title="Develop"
 />
+
+## Astroport in Long-term Support
+
+Astroport is in [long-term support](/docs/learn/long-term-support). Its contracts and the app stay live on **Terra** (`phoenix-1`) and **Neutron** (`neutron-1`), security fixes come first, and no new features are added beyond what long-term support needs. Other chains are no longer supported. Testnet deployments are not maintained.
+
+What this means when you build on Astroport:
+
+- **Pools, factory and router are unchanged.** Swaps, liquidity and the [Router](/docs/develop/smart-contracts/router) work as before. Router 2.0 is the recommended router; Router 1.3.1 stays live for existing integrations.
+- **No ASTRO emissions.** The [Incentives](/docs/develop/smart-contracts/tokenomics/incentives) contract still pays rewards to staked LP tokens, but only from external incentive schedules that anyone can add.
+- **Fees go to the burn and to yASTRO.** The [Maker](/docs/develop/smart-contracts/tokenomics/maker) collects the protocol's share of swap fees. On Neutron it buys ASTRO and sends it to the [ASTRO burner](/docs/develop/smart-contracts/tokenomics/astro-burner), which burns it. On Terra it splits the fees: 25% buys ASTRO that is sent to Neutron and burned, 50% goes to the Development Fund and 25% goes to [yASTRO](/docs/develop/smart-contracts/tokenomics/yastro) stakers in USDC.inj. ASTRO supply only goes down: the burner is the ASTRO denom's admin and can only burn.
+- **Governance is retired.** There is no ASTRO, xASTRO or vxASTRO voting, no emissions voting and no tributes. xASTRO is retired and can't be redeemed.
+- **Some pools are withdraw-only.** Six Neutron pools accept balanced withdrawals only (see [Providing/Withdrawing Liquidity](/docs/develop/tutorials/farming/providing-withdrawing-liquidity#withdraw-only-exit-only-pools)).
+
+Every live contract address is on the [Contract Addresses](/docs/develop/smart-contracts/contract-addresses) page.

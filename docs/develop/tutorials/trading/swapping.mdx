@@ -6,347 +6,313 @@ import Admonition from '@theme/Admonition'
 
 # Swapping
 
-## Overview 
+## Overview
 
-The pair contract for a given pool allows anyone to perform a `swap` between the assets in a pair. Depending on the type of assets in the pair, a user could perform two types of swaps: 
+Every Astroport pool (xyk, stableswap, PCL, transmuter) exposes the same `swap` endpoint and the same `simulation` and `reverse_simulation` queries. This page shows how to swap in a single pool directly:
 
-- Native swap (Native -> Native / Native -> CW20)
-- CW20 swap (CW20 -> CW20 / CW20 -> Native)
+1. Simulate the swap to see what you will receive.
+2. Turn the simulation into a `belief_price` and pick a `max_spread`.
+3. Send the swap: native tokens are attached to the `swap` message, CW20 tokens are sent with a CW20 `send` that embeds the swap.
 
-A native swap will interact with the pair contract directly while a CW20 swap will interact with the CW20 token contract and be processed by the `pair` contract as a `Cw20HookMsg`. 
+To swap through several pools in one transaction, use the Router instead: see [Multi-hop Routing](multi-hop-routing).
+
+The examples use the Terra LUNA/USDC pool and [CosmJS](https://github.com/cosmos/cosmjs). The same messages work on Neutron with Neutron addresses and denoms. Contract addresses for both chains are listed on the [Contract Addresses](/docs/develop/smart-contracts/contract-addresses) page.
+
+| Name | Value |
+| ---- | ----- |
+| Pool (LUNA/USDC, Terra) | `terra1v3lqxl0eyte9x3nhdgcj8hwvjq76aupnnzz0yll8mxs5cckc29pqvg2scu` |
+| LUNA | `uluna` (6 decimals) |
+| USDC (Noble) | `ibc/2C962DAB9F57FE0921435426AE75196009FAA1981BF86991203C8411F8980FDB` (6 decimals) |
+
+You can look up the pool for any pair of assets with the factory's `pair` query (see [Creating a Pair](../farming/creating-a-pair#finding-the-pool-address)).
+
+<Admonition type="info" title="NOTE">
+
+Some Neutron pools are withdraw-only (exit-only) and refuse swaps. Check a pool before you route trades through it: an exit-only pool answers the `simulation` query with an error.
+
+</Admonition>
+
+## Setup
+
+```js
+import { CosmWasmClient, SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
+import { stringToPath } from "@cosmjs/crypto";
+import { GasPrice } from "@cosmjs/stargate";
+
+const rpc = "https://terra-rpc.publicnode.com";
+const pair = "terra1v3lqxl0eyte9x3nhdgcj8hwvjq76aupnnzz0yll8mxs5cckc29pqvg2scu";
+const usdc = "ibc/2C962DAB9F57FE0921435426AE75196009FAA1981BF86991203C8411F8980FDB";
+
+// Read-only client for queries
+const client = await CosmWasmClient.connect(rpc);
+
+// Signing client for transactions. Terra uses coin type 330; Neutron uses the default (118).
+const wallet = await DirectSecp256k1HdWallet.fromMnemonic(process.env.MNEMONIC, {
+  prefix: "terra",
+  hdPaths: [stringToPath("m/44'/330'/0'/0/0")],
+});
+const [{ address: sender }] = await wallet.getAccounts();
+const signingClient = await SigningCosmWasmClient.connectWithSigner(rpc, wallet, {
+  gasPrice: GasPrice.fromString("0.015uluna"),
+});
+```
+
+For Neutron, use `prefix: "neutron"`, drop `hdPaths`, and use an `untrn` gas price (for example `0.0053untrn`). See [Network](../network/network-intro) for endpoints.
+
+## Simulating a Swap
+
+The `simulation` query takes the `offer_asset` (asset and amount, in base units) and, optionally, the `ask_asset_info`. `ask_asset_info` can be left out in a two-asset pool; it is required in pools with more assets.
+
+```json
+{
+  "simulation": {
+    "offer_asset": {
+      "info": {
+        "native_token": {
+          "denom": "uluna"
+        }
+      },
+      "amount": "10000000"
+    },
+    "ask_asset_info": {
+      "native_token": {
+        "denom": "ibc/2C962DAB9F57FE0921435426AE75196009FAA1981BF86991203C8411F8980FDB"
+      }
+    }
+  }
+}
+```
+
+The response is a `SimulationResponse`. All amounts are in base units of the ask asset.
+
+```json
+{
+  "return_amount": "394395",
+  "spread_amount": "1627",
+  "commission_amount": "461"
+}
+```
+
+| Field | Description |
+| ----- | ----------- |
+| `return_amount` | What you receive, after fees |
+| `spread_amount` | The price impact of this swap size, in ask asset units |
+| `commission_amount` | The swap fee taken from the ask asset |
+
+In this example 10 LUNA (`10000000` uluna) returns 0.394395 USDC. Your numbers will differ: they depend on the pool's state when you query it.
+
+To ask the opposite question (how much do I need to offer to receive a given amount), use `reverse_simulation`:
+
+```json
+{
+  "reverse_simulation": {
+    "offer_asset_info": {
+      "native_token": {
+        "denom": "uluna"
+      }
+    },
+    "ask_asset": {
+      "info": {
+        "native_token": {
+          "denom": "ibc/2C962DAB9F57FE0921435426AE75196009FAA1981BF86991203C8411F8980FDB"
+        }
+      },
+      "amount": "1000000"
+    }
+  }
+}
+```
+
+It returns `offer_amount`, `spread_amount` and `commission_amount`.
+
+## Price Protection: `belief_price` and `max_spread`
+
+The `swap` message takes two optional parameters that bound the price you get:
+
+- `belief_price`: the price you expect, expressed as **offer amount per one unit of ask amount**, both in base units: `belief_price = offer_amount / expected_return_amount`. It is a `Decimal` string such as `"25.355291015352628710"`, not a micro-scaled integer.
+- `max_spread`: the largest shortfall you accept, as a fraction (`"0.01"` is 1%). It defaults to `0.005` (0.5%) and can't be more than `0.5` (50%).
+
+The pool checks them after computing the swap:
+
+- **With `belief_price`:** the pool computes `expected_return = offer_amount / belief_price` and fails the swap (`Operation exceeds max spread limit`) if `return_amount < expected_return * (1 - max_spread)`.
+- **Without `belief_price`:** the pool only checks its own price impact, `spread_amount / (return_amount + spread_amount) <= max_spread`. This compares the trade against the pool's current price, so it does not protect you if the pool's price has already moved (for example, because another transaction traded in front of yours). Always send `belief_price` for real trades.
+
+### Calculating `belief_price`
+
+Use the `simulation` result from above:
+
+```text
+offer_amount    = 10000000   (10 LUNA)
+return_amount   = 394395     (0.394395 USDC)
+
+belief_price    = 10000000 / 394395 = 25.355291015352628710
+max_spread      = 0.01
+
+expected_return = 10000000 / 25.355291015352628710 = 394395
+swap fails if the pool would return less than 394395 * 0.99 = 390451.05
+```
+
+In code:
+
+```js
+const offerAmount = "10000000"; // 10 LUNA
+
+const sim = await client.queryContractSmart(pair, {
+  simulation: {
+    offer_asset: { info: { native_token: { denom: "uluna" } }, amount: offerAmount },
+    ask_asset_info: { native_token: { denom: usdc } },
+  },
+});
+
+// offer / return, as a decimal string (Decimal accepts up to 18 fractional digits)
+const beliefPrice = (Number(offerAmount) / Number(sim.return_amount)).toFixed(18);
+const maxSpread = "0.01";
+```
+
+<Admonition type="caution" title="Common mistakes">
+
+- **Don't invert it.** `belief_price` is offer per ask (`offer / return`). Using `return / offer` makes the expected return far too high or too low, so the swap either always fails or is not protected.
+- **Don't scale it.** Don't multiply the price by 10^6 or pass `return_amount` itself as the price.
+- **Mind decimals.** Both amounts are in base units. When the two tokens have the same number of decimals (as LUNA and USDC do, 6 each), the base-unit ratio equals the display price. When they differ (for example a 6-decimal token against an 18-decimal token), the base-unit ratio is what the pool expects, not the display price.
+- **A simulation is only as good as the moment it was taken.** A `belief_price` derived from a simulation protects you against the price moving between your query and your transaction. If you have a price you trust from elsewhere (your own quote, an oracle), derive `belief_price` from that instead.
+
+</Admonition>
 
 ## Native Swap
 
-Performs a native swap in a given pool.
+When the offer asset is a native token (`uluna`, `untrn`, IBC and tokenfactory denoms), call `swap` on the pool and attach the offer amount as funds. The attached amount must equal `offer_asset.amount`.
 
-<CH.Section>
-    <CH.Scrollycoding>
-
-        ### `Swap` Endpoint
-
-        To perform a native swap, you need to execute a contract message pointing to the [`swap`](../../../develop/smart-contracts/swap-pairs/constant-product-pools#swap) endpoint in the [`pair` contract](../../../develop/smart-contracts/swap-pairs/constant-product-pools) for a given pool.
-
-        The `swap` endpoint requires an `offer_asset` parameter which contains information about the offer asset itself and the `amount` to send. 
-
-        ```json focus=1:10,14:15
-        {
-          "swap": {
-            "offer_asset": {
-              "info": {
-                "native_token": {
-                  "denom": "uluna"
-                }
-              },
-              "amount": "100000"
-            }, 
-            "belief_price": beliefPrice, 
-            "max_spread": '0.005', 
-            "to": "..."
-          }
+```json
+{
+  "swap": {
+    "offer_asset": {
+      "info": {
+        "native_token": {
+          "denom": "uluna"
         }
-        ```
+      },
+      "amount": "10000000"
+    },
+    "ask_asset_info": {
+      "native_token": {
+        "denom": "ibc/2C962DAB9F57FE0921435426AE75196009FAA1981BF86991203C8411F8980FDB"
+      }
+    },
+    "belief_price": "25.355291015352628710",
+    "max_spread": "0.01"
+  }
+}
+```
 
-        ---
+| Parameter | Type | Description |
+| --------- | ---- | ----------- |
+| `offer_asset` | `Asset` | The asset and amount you offer |
+| `ask_asset_info` | `Option<AssetInfo>` | The asset you want. Optional in two-asset pools |
+| `belief_price` | `Option<Decimal>` | Expected price, offer per ask, in base units |
+| `max_spread` | `Option<Decimal>` | Largest accepted shortfall against `belief_price` (default `0.005`, max `0.5`) |
+| `to` | `Option<String>` | Recipient of the ask asset, if not the sender |
 
-        #### `Coins`
+```js
+const result = await signingClient.execute(
+  sender,
+  pair,
+  {
+    swap: {
+      offer_asset: { info: { native_token: { denom: "uluna" } }, amount: offerAmount },
+      ask_asset_info: { native_token: { denom: usdc } },
+      belief_price: beliefPrice,
+      max_spread: maxSpread,
+    },
+  },
+  "auto",
+  "",
+  [{ denom: "uluna", amount: offerAmount }] // funds: the offer asset
+);
 
-        For native swaps, you need to send the `native_token` along with the transaction message.
-        
-        The code in this section is an example of what a `swap` message may look like using [feather.js](../network/terra-2#featherjs) to send `Coins` with our transaction. 
-
-        ```js
-        const astrolunaAddress = "terra1udsua9w6jljwxwgwsegvt6v657rg3ayfvemupnes7lrggd28s0wq7g8azm";
-
-        const swap = new MsgExecuteContract(
-          wallet.key.accAddress('terra'),
-          astrolunaAddress,
-          {
-            "swap": {
-                "offer_asset": {
-                  "info": {
-                    "native_token": {
-                      "denom": "uluna"
-                    }
-                  },
-                  "amount": "100000"
-                }
-            }
-          },
-          new Coins({ uluna: '100000' })
-        );
-
-        const tx = await wallet.createAndSignTx({
-          msgs: [swap],
-          feeDenoms: ['uluna'],
-          chainID: 'pisco-1',
-        });
-
-        const result = await lcd.tx.broadcast(tx, 'pisco-1');
-
-        console.log(result);
-        ```
-
-        ---
-
-        ### Optional Parameters
-
-        The `swap` endpoint takes in the following optional parameters:
-
-        - `belief_price`: Expected return amount
-        - `max_spread`: The difference between the ask amount before and after the swap operation. If the swap spread exceeds the provided max limit, the swap will fail. 
-        - `to`: Address receiving tokens (if different from sender)
-
-        ```json focus=11:13
-        {
-          "swap": {
-            "offer_asset": {
-              "info": {
-                "native_token": {
-                  "denom": "uluna"
-                }
-              },
-              "amount": "100000"
-            }, 
-            "belief_price": beliefPrice, 
-            "max_spread": '0.005', 
-            "to": "..."
-          }
-        }
-        ```
-
-        ---
-
-        #### Belief Price + Max Spread
-
-        If `belief_price` is provided in combination with `max_spread`, the pool will check the difference between the return amount (using `belief_price`) and the real pool price.
-
-        The `belief_price` +/- the `max_spread` is the range of possible acceptable prices for this swap.
-
-        ```json focus=11:12
-        ```
-
-        ---
-
-        ### Calculating the `belief_price`
-
-        To obtain the `belief_price`, this tutorial uses two examples: 
-
-        - Calculating the `belief_price` using the proportion of pool balances
-        - Querying the [`simulation`](../../../develop/smart-contracts/swap-pairs/constant-product-pools#simulation) endpoint in the pair contract for which the swap is taking place
-
-
-        ```json focus=11
-        ```
-
-        ---
-
-        #### `Pool` Endpoint
-
-        To calculate the `belief_price` using the proportion of pool balances, we first need to fetch the amount of each asset in the pool. This can be done by calling the [`pool`](../../../develop/smart-contracts/swap-pairs/constant-product-pools#pool) endpoint in the pair contract. 
-
-        {/* Once we have the amount of each asset in the pool. we can calculate the `belief_price` and input the result into our execute message.  */}
-
-        The code in this section is an example of using [feather.js](../network/terra-2#featherjs) to query the pair contract, perform calculations with our response, and store the results in a variable to use as an input for our swap message.  
-
-        {/* ```js
-        const { assets } = await lcd.wasm.contractQuery(
-            astrousdcAddress, 
-            {  
-                "pool": {}
-            }
-        );
-        
-        const beliefPrice = (
-            assets[0].amount / assets[1].amount
-        ).toFixed(18); 
-        ``` */}
-
-        ```js
-        const astrolunaAddress = "terra1udsua9w6jljwxwgwsegvt6v657rg3ayfvemupnes7lrggd28s0wq7g8azm";
-        const { assets } = await lcd.wasm.contractQuery(astrolunaAddress, { "pool": {} });
-        const beliefPrice = (assets[0].amount / assets[1].amount).toFixed(18); 
-        ```
-
-        ---
-
-        #### `Simulation` Enpoint
-
-        Astroport's native solution for calculating the `belief_price` is the [`simulation`](../../../develop/smart-contracts/swap-pairs/constant-product-pools#simulation) query.
-
-        The query takes in an `offer_asset` which contains information about the native token and an amount to send.
-
-        ```json 
-        {
-          "simulation": {
-            "offer_asset": {
-              "info": {
-                "native_token": {
-                  "denom": "uluna"
-                }
-              },
-              "amount": "100000"
-            }
-          }
-        }
-        ```      
-
-        ---
-
-        Normalizing Values
-
-        Depending on the token decimal for the assets you are swapping, you may need to normalize the response from the `simulation` query before passing it into your `swap` message. 
-
-        The code in this section is an example of using [feather.js](../network/terra-2#featherjs) to perform the `simulation` query, normalize the response, and store the results for later usage.
-
-        ```js 
-        const astrolunaAddress = "terra1udsua9w6jljwxwgwsegvt6v657rg3ayfvemupnes7lrggd28s0wq7g8azm";
-        let beliefPrice;
-
-        const simulation = await lcd.wasm.contractQuery(
-        astrolunaAddress, 
-        {
-          "simulation": {
-            "offer_asset": {
-              "info": {
-                "native_token": {
-                  "denom": "uluna"
-                }
-              },
-              "amount": "100000"
-            }
-          }
-        }
-        ).then(result => { beliefPrice = result.return_amount });
-
-        beliefPrice = String(beliefPrice * 1000000);
-        ```
-        ---
-
-
-    </CH.Scrollycoding>
-</CH.Section>
+console.log(result.transactionHash);
+```
 
 ## CW20 Swap
 
-Performs a CW20 swap in a given pool.
+When the offer asset is a CW20 token, you don't call the pool directly. Instead, call `send` on the CW20 token contract with the pool as `contract` and a base64-encoded swap hook as `msg`. The hook has the same fields as `swap` except `offer_asset`: the token and amount come from the `send` itself.
 
-<CH.Section>
-    <CH.Scrollycoding>
+The decoded hook message:
 
-        ### `Cw20HookMsg`
+```json
+{
+  "swap": {
+    "ask_asset_info": {
+      "native_token": {
+        "denom": "uluna"
+      }
+    },
+    "belief_price": "0.039439500000000000",
+    "max_spread": "0.01"
+  }
+}
+```
 
-        To perform a CW20 swap, you need to execute a contract message pointing to the [`send`](https://docs.rs/cw20/latest/cw20/enum.Cw20ExecuteMsg.html#variant.Send) endpoint in the CW20 contract of the token you are swapping. 
+The `send` message on the CW20 contract (the `msg` value is the hook above, JSON-encoded and then base64-encoded):
 
-        `send` includes the `contract` the tokens are being sent to (pair contract address), the `amount` to send/swap, and a binary encoded `msg` containing our contract call. 
+```json
+{
+  "send": {
+    "contract": "terra1...pool",
+    "amount": "1000000",
+    "msg": "eyJzd2FwIjp7ImFza19hc3NldF9pbmZvIjp7Im5hdGl2ZV90b2tlbiI6eyJkZW5vbSI6InVsdW5hIn19LCJiZWxpZWZfcHJpY2UiOiIwLjAzOTQzOTUwMDAwMDAwMDAwMCIsIm1heF9zcHJlYWQiOiIwLjAxIn19"
+  }
+}
+```
 
-        ```json
-        {
-          "send": {
-            "contract": astrolunaAddress, 
-            "amount": "1000000", 
-            "msg": toBase64(
-              {
-                "swap": {
-                  "ask_asset_info": {
-                    "native_token": {
-                      "denom": "uluna"
-                    }
-                  }, 
-                  "belief_price": beliefPrice, 
-                  "max_spread": "0.005", 
-                  "to": "..."
-                }
-              }
-            )
-          }
+With CosmJS, `toBinary` does the encoding:
+
+```js
+import { toBinary } from "@cosmjs/cosmwasm-stargate";
+
+const cw20Token = "terra1...token"; // the CW20 you are selling
+const cw20Pool = "terra1...pool";   // a pool that holds this CW20
+
+const result = await signingClient.execute(
+  sender,
+  cw20Token, // the message goes to the token contract, not the pool
+  {
+    send: {
+      contract: cw20Pool,
+      amount: "1000000",
+      msg: toBinary({
+        swap: {
+          ask_asset_info: { native_token: { denom: "uluna" } },
+          belief_price: cw20BeliefPrice, // offer (CW20) per ask (uluna), from a simulation of this pool
+          max_spread: "0.01",
+        },
+      }),
+    },
+  },
+  "auto"
+);
+```
+
+For the simulation, describe a CW20 with the `token` variant of [`AssetInfo`](/docs/develop/smart-contracts/common-types#assetinfo):
+
+```json
+{
+  "simulation": {
+    "offer_asset": {
+      "info": {
+        "token": {
+          "contract_addr": "terra1...token"
         }
-        ```
-        ---
+      },
+      "amount": "1000000"
+    }
+  }
+}
+```
 
-        #### `swap` parameters
+## Links
 
-        Our swap message takes in our `ask_asset_info`, `belief_price`, `max_spread`, and the address tokens are being sent `to` (if diffent from the sender). 
-
-        If `belief_price` is provided in combination with `max_spread`, the pool will check the difference between the return amount (using `belief_price`) and the real pool price. The `belief_price` +/- the `max_spread` creates a range of possible acceptable prices for this swap.
-
-
-        ```json focus=6:16
-        ```
-
-        ---
-
-        ### Encoding our `Msg`
-
-        To encode our message, there are two common options: 
-
-        - An [online base64 encoder](https://www.base64encode.org/)
-        - A custom function
-
-        The code in this section uses a custom function (`toBase64`) to display our binary message - this function needs to be defined elsewhere to be used. The actual string representation of our message would be an encoded binary.
-
-        ```json focus=5:18
-        ```
-
-        ---
-
-        #### `toBase64` Encoder
-
-        The code in this section is an example of what a `send` message may look like [feather.js](../network/terra-2#featherjs) to define our custom function and encode our message. 
-
-        ```js
-        const toBase64 = (obj) => {
-            return Buffer.from(JSON.stringify(obj)).toString("base64");
-        };
-
-        const cw20Swap = new MsgExecuteContract(
-          wallet.key.accAddress('terra'),
-          astroAddress,
-          {
-            "send": {
-              "contract": astrolunaAddress, 
-              "amount": "1000000", 
-              "msg": toBase64(
-                {
-                  "swap": {
-                    "ask_asset_info": {
-                      "native_token": {
-                        "denom": "uluna"
-                      }
-                    }, 
-                    "belief_price": beliefPrice, 
-                    "max_spread": "0.005"
-                  }
-                }
-              )
-            }
-          }
-        )
-        ```
-
-        ---
-
-        ### Calculating the `belief_price`
-
-        Lastly, calculating the `belief_price` for CW20 swaps is similar to doing so for native swaps. To learn more about this topic, refer to the section [above](#calculating-the-belief_price). 
-
-        The exception is the `info` parameter in our [`simulation`](../../../develop/smart-contracts/swap-pairs/constant-product-pools#simulation) query which is derived from an [`AssetInfo`](../../smart-contracts/common-types#assetinfo) enum. For CW20 swaps, instead of using `native_token` and `denom`, use `token` and `contract_addr` .
-
-
-        ```json 
-        {
-          "simulation": {
-            "offer_asset": {
-              "info": {
-                "token": {
-                  "contract_addr": astrolunaAddress
-                }
-              },
-              "amount": "1000000"
-            }
-          }
-        }
-        ```
-
-    </CH.Scrollycoding>
-</CH.Section>
-
+- [Pool contracts](/docs/develop/smart-contracts/swap-pairs/swap-pairs-intro): full message reference for each pool type
+- [Common Types](/docs/develop/smart-contracts/common-types): `Asset` and `AssetInfo`
+- [Multi-hop Routing](multi-hop-routing): swaps across several pools with Router 2.0
+- [Pair message types in astroport-core](https://github.com/astroport-fi/astroport-core/blob/main/packages/astroport/src/pair.rs)

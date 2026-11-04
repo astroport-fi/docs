@@ -1,0 +1,239 @@
+---
+sidebar_position: 4
+---
+
+import Admonition from '@theme/Admonition'
+
+# Exit-Only Pools
+
+## Overview
+
+`astroport-pair-exit-only` is the code a pool is migrated to when it must only allow balanced withdrawals. It was written for the six Neutron pools drained in the 2026-09-22 incident. Their balances had gone to zero while their LP supply was unchanged, so a small deposit would have minted almost all LP tokens and taken the refill, and swaps would have traded the refill at stale prices. The pools were migrated to this code, then refilled with the returned assets, so their LPs can withdraw their share.
+
+An exit-only pool:
+
+- pays an LP its share of every asset the pool holds, rounded down, and burns the LP tokens;
+- refuses deposits, swaps, config and ownership changes, and any other CW20 hook;
+- answers the `pair`, `pool`, `share` and `simulate_withdraw` queries; every other query returns an exit-only error.
+
+The migration doesn't write anything: the pool keeps its storage and its cw2 version, so a later build of its original contract that accepts that version could take it back.
+
+<Admonition type="info" title="NOTE">
+LP tokens staked in the [Incentives](../tokenomics/incentives.mdx) contract must be unstaked before they can be withdrawn.
+</Admonition>
+
+## Pools running this code (Neutron)
+
+| Pool | Address | Pool contract before the migration | LP token |
+| ----------- | ----------- | ----------- | ----------- |
+| dATOM/USDC | [`neutron1nfns3ck2ykrs0fknckrzd9728cyf77devuzernhwcwrdxw7ssk2s3tjf8r`](https://neutron.celat.one/neutron-1/contracts/neutron1nfns3ck2ykrs0fknckrzd9728cyf77devuzernhwcwrdxw7ssk2s3tjf8r) | pair-concentrated-duality 4.3.1 | native |
+| NTRN/USDC | [`neutron18c8qejysp4hgcfuxdpj4wf29mevzwllz5yh8uayjxamwtrs0n9fshq9vtv`](https://neutron.celat.one/neutron-1/contracts/neutron18c8qejysp4hgcfuxdpj4wf29mevzwllz5yh8uayjxamwtrs0n9fshq9vtv) | pair-concentrated-duality 4.3.1 | native |
+| dATOM/ATOM | [`neutron1yem82r0wf837lfkwvcu2zxlyds5qrzwkz8alvmg0apyrjthk64gqeq2e98`](https://neutron.celat.one/neutron-1/contracts/neutron1yem82r0wf837lfkwvcu2zxlyds5qrzwkz8alvmg0apyrjthk64gqeq2e98) | pair-concentrated 4.0.2 | native |
+| USDC/DYDX | [`neutron1j4xpv03fw664mvntlhqnzp5hjqk2nfw00vrgx9qlq97rxc9fu3lqvmszl2`](https://neutron.celat.one/neutron-1/contracts/neutron1j4xpv03fw664mvntlhqnzp5hjqk2nfw00vrgx9qlq97rxc9fu3lqvmszl2) | pair-concentrated 1.2.13 | CW20 |
+| wstETH/WETH | [`neutron1yw0a7nxa8jdgzmdsme4gwxhj76n44z305qgwrzvlfavgna9epcys3k9m2f`](https://neutron.celat.one/neutron-1/contracts/neutron1yw0a7nxa8jdgzmdsme4gwxhj76n44z305qgwrzvlfavgna9epcys3k9m2f) | pair-concentrated 1.2.15 | CW20 |
+| axlUSDC/USDC | [`neutron1ns2tcunrlrk5yk62fpl74ycazanceyfmmq7dlj6sq8n0rnkuvk7szstkyx`](https://neutron.celat.one/neutron-1/contracts/neutron1ns2tcunrlrk5yk62fpl74ycazanceyfmmq7dlj6sq8n0rnkuvk7szstkyx) | pair-transmuter 1.0.0 | CW20 |
+
+## Links
+
+- **Contract Repo:** https://github.com/astroport-fi/astroport-core/tree/main/contracts/pair_exit_only
+- **contract.rs:** https://github.com/astroport-fi/astroport-core/blob/main/contracts/pair_exit_only/src/contract.rs
+- **Tests:** https://github.com/astroport-fi/astroport-core/tree/main/contracts/pair_exit_only/tests
+- **Version:** `astroport-pair-exit-only` 1.0.0
+
+## InstantiateMsg
+
+None. The code can't be instantiated; pools can only be migrated to it.
+
+## MigrateMsg
+
+The migrate message is empty. Supported pool contracts are `astroport-pair-concentrated` (1.x and 4.x), `astroport-pair-concentrated-duality` and `astroport-pair-transmuter`. Migration is refused for other contracts, for a config that names another address, and for a pool already in `pair_concentrated` 4.3's exit-only mode (which withholds an asset). Migrating again changes nothing.
+
+<CH.Section>
+<CH.Code>
+
+```json json
+{}
+```
+
+```rust contract.rs
+#[cw_serde]
+pub struct MigrateMsg {}
+```
+
+</CH.Code>
+
+</CH.Section>
+
+## ExecuteMsg
+
+### `withdraw_liquidity`
+
+For pools with a native (tokenfactory) LP token. Attach the LP tokens as funds, for example `factory/neutron18c8qejysp4hgcfuxdpj4wf29mevzwllz5yh8uayjxamwtrs0n9fshq9vtv/astroport/share` for NTRN/USDC. The examples below use that pool. `assets` must be empty, and the call fails if the share would receive nothing.
+
+<CH.Section>
+<CH.Code>
+
+```json json
+{
+  "withdraw_liquidity": {
+    "assets": [],
+    "min_assets_to_receive": [
+      {
+        "info": {
+          "native_token": {
+            "denom": "untrn"
+          }
+        },
+        "amount": "990000"
+      },
+      {
+        "info": {
+          "native_token": {
+            "denom": "ibc/B559A80D62249C8AA07A380E2A2BEA6E5CA9A6F079C912C3A9E9B494105E4F81"
+          }
+        },
+        "amount": "1200000"
+      }
+    ]
+  }
+}
+```
+
+```rust pair.rs
+WithdrawLiquidity {
+    #[serde(default)]
+    assets: Vec<Asset>,
+    min_assets_to_receive: Option<Vec<Asset>>,
+},
+```
+
+</CH.Code>
+
+| **Params** | **Type** | **Description** |
+| ----------- | ----------- | ----------- |
+| [`assets`](focus://json#3) | [`Vec<Asset>`](../common-types.mdx#asset) | Must be empty. One-sided withdrawals are refused |
+| [`min_assets_to_receive`](focus://json#4:21) | `Option<Vec<Asset>>` | Fails the withdrawal if less than these amounts would be returned |
+
+</CH.Section>
+
+### `receive`
+
+For pools with a CW20 LP token (USDC/DYDX, wstETH/WETH and axlUSDC/USDC). Execute `send` on the LP token contract with the pool as `contract` and a base64-encoded `withdraw_liquidity` hook. The hook takes the same fields as above, and any other hook is refused.
+
+<CH.Section>
+<CH.Code>
+
+```json json
+{
+  "send": {
+    "contract": "neutron1j4xpv03fw664mvntlhqnzp5hjqk2nfw00vrgx9qlq97rxc9fu3lqvmszl2",
+    "amount": "1000000",
+    "msg": "eyJ3aXRoZHJhd19saXF1aWRpdHkiOnt9fQ=="
+  }
+}
+```
+
+</CH.Code>
+
+| **Params** | **Type** | **Description** |
+| ----------- | ----------- | ----------- |
+| [`contract`](focus://json#3) | `String` | The pool address (here USDC/DYDX) |
+| [`amount`](focus://json#4) | `Uint128` | The amount of LP tokens to withdraw |
+| [`msg`](focus://json#5) | `Binary` | Base64 of `{"withdraw_liquidity":{}}` |
+
+</CH.Section>
+
+## QueryMsg
+
+### `pair`
+
+Returns the pool's [`PairInfo`](../common-types.mdx#pairinfo), unchanged by the migration.
+
+<CH.Section>
+<CH.Code>
+
+```json json
+{
+  "pair": {}
+}
+```
+
+</CH.Code>
+
+</CH.Section>
+
+### `pool`
+
+Returns the assets the pool holds and the LP supply, as a `PoolResponse`.
+
+<CH.Section>
+<CH.Code>
+
+```json json
+{
+  "pool": {}
+}
+```
+
+</CH.Code>
+
+</CH.Section>
+
+<CH.Section>
+<CH.Code>
+
+```json json
+{
+  "assets": [
+    {
+      "info": {
+        "native_token": {
+          "denom": "untrn"
+        }
+      },
+      "amount": "1000000000"
+    },
+    {
+      "info": {
+        "native_token": {
+          "denom": "ibc/B559A80D62249C8AA07A380E2A2BEA6E5CA9A6F079C912C3A9E9B494105E4F81"
+        }
+      },
+      "amount": "1200000000"
+    }
+  ],
+  "total_share": "500000000"
+}
+```
+
+</CH.Code>
+
+| **Params** | **Type** | **Description** |
+| ----------- | ----------- | ----------- |
+| [`assets`](focus://json#2:19) | [`Vec<Asset>`](../common-types.mdx#asset) | The pool's balance of each of its assets |
+| [`total_share`](focus://json#20) | `Uint128` | The LP tokens in circulation |
+
+</CH.Section>
+
+### `share` and `simulate_withdraw`
+
+Both return what a given amount of LP tokens would be withdrawn for, as a [`Vec<Asset>`](../common-types.mdx#asset).
+
+<CH.Section>
+<CH.Code>
+
+```json json
+{
+  "simulate_withdraw": {
+    "lp_amount": "1000000"
+  }
+}
+```
+
+</CH.Code>
+
+| **Params** | **Type** | **Description** |
+| ----------- | ----------- | ----------- |
+| [`lp_amount`](focus://json#3) | `Uint128` | The amount of LP tokens (`amount` for `share`) |
+
+</CH.Section>

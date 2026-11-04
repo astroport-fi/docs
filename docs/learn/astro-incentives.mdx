@@ -1,17 +1,31 @@
 ---
-sidebar_position: 3
+sidebar_position: 5
 ---
-
-import AstroGeneratorsUrl from '@site/static/img/learn/astro-generators/astro-generators-1.png';
 
 # Astro Incentives
 
-Liquidity providers (LPs) can provide liquidity to a large number of platforms, which may offer drastically different rewards and fees. Astroport addresses this problem with its permissionless incentives system, which allows anyone to add incentives to any pool on any of Astroport's outposts.
+## Overview
 
-## Liquidity Mining​
+Liquidity providers (LPs) earn trading fees on every pool. On top of that, a pool can have incentives: extra tokens paid to the LPs who stake their LP tokens in Astroport's Incentives contract.
 
-Rather than depositing Astroport LP tokens directly in third-party staking contracts, LPs can deposit their tokens into Astroport’s incentives contract to start receiving rewards.
+There are **no ASTRO emissions** anymore. Emissions to pools are zero, and emissions voting has ended along with the rest of Astroport governance (see [Long-Term Support](./long-term-support)). The Generator contracts that used to distribute emissions are legacy.
 
-When an LP wishes to claim accrued rewards, they can claim those rewards from Astroport's Reward Center.
+Pools can still be incentivized in two ways:
 
-More information is available under the [Deploying Incentives](./workstation/incentives/incentives-intro) section.
+- **External incentives.** Anyone can add an incentive schedule to any pool on Terra or Neutron, in up to five reward tokens per pool. See [Deploying Incentives](./workstation/incentives/incentives-intro).
+- **yASTRO rewards for yASTRO pools (Terra).** A pool that holds yASTRO earns yASTRO's weekly USDC.inj rewards like any holder. Anyone can forward those rewards to Incentives, where they are paid to the pool's staked LPs. This needs at least 1% of the pool's LP supply staked in Incentives. See [yASTRO in pools](./yastro#yastro-in-pools).
+
+## Earning incentives
+
+Rewards are only paid to LP tokens staked in the Incentives contract:
+
+1. Provide liquidity to a pool and receive LP tokens.
+2. Stake the LP tokens in Incentives. The app can do this in the same transaction when you provide liquidity.
+3. Claim your rewards from the app's Rewards Center at any time.
+
+LP tokens that aren't staked keep earning trading fees but no incentives. See [Staking/Unstaking LP Tokens](./workstation/farmers-fields/staking-unstaking-lp-tokens).
+
+## Links
+
+- [Incentives contract source](https://github.com/astroport-fi/astroport-core/tree/main/contracts/tokenomics/incentives)
+- [Contract addresses](/docs/develop/smart-contracts/contract-addresses)
