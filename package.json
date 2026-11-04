@@ -16,8 +16,8 @@
   },
   "dependencies": {
     "@code-hike/mdx": "^0.7.4",
-    "@docusaurus/core": "3.10.2",
-    "@docusaurus/preset-classic": "3.10.2",
+    "@docusaurus/core": "2.4.3",
+    "@docusaurus/preset-classic": "2.4.3",
     "@mdx-js/react": "^2.1.5",
     "autoprefixer": "^10.4.13",
     "clsx": "^1.2.1",
