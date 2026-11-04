@@ -35,7 +35,6 @@ yASTRO has no CW20 receive hook: ASTRO is a native denom on Terra, so it's stake
 Epochs are Astroport's weeks, starting Monday 00:00 UTC (the same weeks [Incentives](./incentives) uses). Everything deposited with `deposit_rewards` during an epoch is queued, then paid out evenly, per second, over the next epoch to yASTRO holders, pro rata to their balance.
 
 - Holding yASTRO for a minute earns a minute of rewards, so there's nothing to gain by buying just before a deposit.
-- The Maker deposits on Sunday night, so each week's fees start streaming at Monday 00:00 UTC.
 - Anything streamed while nobody holds yASTRO is queued again for the next epoch.
 - Fractions of a unit stay in an account's pending rewards until they add up to a whole unit, and so does what the streaming math rounds off. Rounding leaves dust in the contract, never a shortfall.
 
@@ -211,7 +210,7 @@ Sends the sender every unbonding that has matured. Fails if nothing has matured 
 
 ### `deposit_rewards`
 
-Queues the attached reward tokens to stream to yASTRO holders over the next epoch. Anyone can call it; only the accepted reward denoms can be attached. The Terra Maker calls it every week with its yASTRO leg.
+Queues the attached reward tokens to stream to yASTRO holders over the next epoch. Anyone can call it; only the accepted reward denoms can be attached. The Terra Maker calls it with its yASTRO leg when it distributes fees.
 
 ```json
 {
