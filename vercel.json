@@ -61,6 +61,11 @@
       "statusCode": 301
     },
     {
+      "source": "/docs/learn/workstation/traders-port/limit-orders",
+      "destination": "/docs/learn/workstation/traders-port/swap",
+      "statusCode": 301
+    },
+    {
       "source": "/astroport/workstation/trading",
       "destination": "/docs/learn/workstation/traders-port/traders-port-intro",
       "statusCode": 301
