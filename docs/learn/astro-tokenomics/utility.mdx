@@ -4,10 +4,26 @@ sidebar_position: 1
 
 # Utility
 
-ASTRO’s utility materializes via xASTRO on Terra 2 (and xASTROC on Terra Classic). ASTRO holders may stake their ASTRO in the xASTRO pool to receive xASTRO tokens, activate their governance power, and accrue a share of trading fees. xASTRO is inspired by SushiSwap’s xSUSHI token / xSUSHI pool.
+## Overview
 
-## xASTRO Utility
+ASTRO's main utility today is staking it as **yASTRO** on Terra to earn a share of protocol fees. ASTRO no longer has a governance role.
 
-- **Fee-share:** xASTRO will be a transferable token that automatically accrues additional ASTRO from the Astral Assembly’s portion of trading fees, pro rata based on the number of xASTRO in existence. While adjustable by ASTRO governance, initially half of the Astral Assembly’s portion of trading fees will accrue to xASTRO holders.
-- **Governance:** xASTRO holders will be able to vote on and submit proposals to Astroport governance, including incentives allocation voting (more on this in the following section).
+## yASTRO: fee share
 
+- Stake ASTRO on Terra and receive yASTRO 1:1 at [app.astroport.fi/yastro](https://app.astroport.fi/yastro).
+- Each week 25% of the fees collected by the Terra Maker are deposited into yASTRO in USDC.inj and streamed per second over the following week to yASTRO holders, pro rata to their balance.
+- Claim rewards at any time from the Rewards Center. Unstaking takes 7 days, and unbonding ASTRO earns nothing.
+- yASTRO is transferable. Pools that hold yASTRO earn rewards too, and these can be forwarded to the pool's staked LPs.
+
+Read the full guide in [yASTRO](../yastro).
+
+## Other uses
+
+- **Trading and liquidity.** ASTRO trades in Astroport pools on Neutron and Terra and can be provided as liquidity like any other token.
+- **Incentivization fee.** Adding a new reward token to a pool's incentives costs a 1,500 ASTRO fee, paid to the Maker. See [Deploying Incentives](../workstation/incentives/incentives-intro).
+
+## What ASTRO no longer does
+
+- **Governance is retired.** There are no ASTRO, xASTRO or vxASTRO votes, no token holder proposals and no emissions voting. The protocol is run by the Astroport Contributors DAOs (see [Long-Term Support](../long-term-support#who-runs-the-protocol)).
+- **xASTRO is retired.** xASTRO used to be the staking token that accrued ASTRO from fees and carried voting power. After the September 2026 Neutron incident it was frozen and retired; it has no value and can't be redeemed. Pre-incident holders were paid in ASTRO at 1.3402 ASTRO per xASTRO.
+- **vxASTRO is winding down.** Existing vxASTRO positions only unwind through their normal unlock. They no longer vote or direct emissions.

@@ -1,0 +1,433 @@
+---
+sidebar_position: 4
+---
+
+import Admonition from '@theme/Admonition'
+
+# Incentives
+
+## Overview
+
+The Incentives contract (formerly the Generator) is where LP tokens are staked to earn rewards. Rewards are distributed per second, pro rata to the LP tokens each staker has in a pool. It supports CW20 and tokenfactory LP tokens.
+
+Under long-term support:
+
+- **There are no ASTRO emissions.** `astro_per_second` is 0, there is no generator controller, and every Vesting schedule that funded emissions has ended. The emissions endpoints (`setup_pools`, `set_tokens_per_second`) are owner-only and unused.
+- **Anyone can add external incentive schedules** to any pool registered in the factory, in any token that isn't blocked. A schedule that adds a reward token new to the pool pays the incentivization fee.
+- **[yASTRO](./yastro) forwards pools' yASTRO rewards here** (`forward_pool_rewards`) as one-week schedules for the pools' LP stakers. On Terra, yASTRO is exempt from the incentivization fee.
+
+The legacy Generator 2.3.2 contracts still exist on both chains, but emissions ended and they are not part of the protocol. See the [Retired](../contract-addresses#retired) addresses.
+
+## Links
+
+- **Terra Address:** [terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x](https://terrasco.pe/mainnet/address/terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x) (`astroport-incentives` 1.5.0)
+- **Neutron Address:** [neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch](https://neutron.celat.one/neutron-1/contracts/neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch) (`astroport-incentives` 1.4.0)
+- **Contract Repo:** https://github.com/astroport-fi/astroport-core/tree/main/contracts/tokenomics/incentives
+- **execute.rs:** https://github.com/astroport-fi/astroport-core/blob/main/contracts/tokenomics/incentives/src/execute.rs
+- **incentives.rs:** https://github.com/astroport-fi/astroport-core/blob/main/packages/astroport/src/incentives.rs
+- **Tests:** https://github.com/astroport-fi/astroport-core/tree/main/contracts/tokenomics/incentives/tests
+
+Fee exemptions (`update_fee_exemptions`, the `fee_exemptions` query and the `sender` field of `is_fee_expected`) were added in 1.5.0, so they exist on Terra only. Everything else on this page applies to both chains.
+
+## Concepts
+
+### Schedules and periods
+
+Reward schedules are counted in periods of one week. Each period starts on Monday 00:00 UTC. A new schedule starts right away and lasts **until the next Monday plus `duration_periods` weeks**, so the shortest schedule lasts between 7 days and 1 second and 14 days, depending on the day it's added. A schedule lasts at most 25 periods (about 6 months).
+
+The reward is spread evenly over the schedule: `rps = amount / (end - now)`. It must be at least 1 unit per second, otherwise `incentivize` fails. Overlapping schedules for the same reward token are added up.
+
+A pool can have at most 5 external reward tokens at a time. A reward token whose schedules end is removed from the pool, and its next schedule counts as a new reward token again, so incentivizers are encouraged to keep schedules running without breaks.
+
+### Incentivization fee
+
+The first schedule of a reward token in a pool (a token the pool doesn't currently have as a reward) pays the incentivization fee. On both chains the fee is 1,500 ASTRO (`1500000000` units of ASTRO), sent to the Maker. Attach it to the `incentivize` call next to the reward.
+
+No fee is due when:
+
+- the pool already has the reward token,
+- the reward is ASTRO,
+- the sender is on the fee exemption list (Terra 1.5.0 only; yASTRO is on it).
+
+Use [`is_fee_expected`](#is_fee_expected) to check before sending.
+
+### Staking LP tokens
+
+Any LP token of a pool registered in the factory can be staked, whether or not the pool has rewards. Rewards are claimed automatically on every `deposit` and `withdraw`, or with `claim_rewards`. When a pool's `provide_liquidity` is called with `auto_stake: true`, the pool stakes the new LP tokens here for the provider.
+
+Rewards that accrue while nobody is staked in a pool are "orphaned". The owner can collect them with `claim_orphaned_rewards`.
+
+## InstantiateMsg
+
+<CH.Section>
+    <CH.Code>
+
+        ```json json
+        {
+            "owner": "terra1k9j8rcyk87v5jvfla2m9wp200azegjz0eshl7n2pwv852a7ssceqsnn7pq",
+            "factory": "terra14x9fr055x5hvr48hzy2t4q7kvjvfttsvxusa4xsdcy702mnzsvuqprer8r",
+            "astro_token": {
+                "native_token": {
+                    "denom": "ibc/8D8A7F7253615E5F76CB6252A1E1BD921D5EDB7BBAAF8913FB1C77FF125D9995"
+                }
+            },
+            "vesting_contract": "terra1qyuarnzcc6uuft9n9mltraprreke4v8gvxd8u3nslngxhflhru9qw34nc3",
+            "incentivization_fee_info": {
+                "fee_receiver": "terra1ygcvxp9s054q8u2q4hvl52ke393zvgj0sllahlycm4mj8dm96zjsa45rzk",
+                "fee": {
+                    "denom": "ibc/8D8A7F7253615E5F76CB6252A1E1BD921D5EDB7BBAAF8913FB1C77FF125D9995",
+                    "amount": "1500000000"
+                }
+            },
+            "guardian": null
+        }
+        ```
+
+        ```rust incentives.rs
+        #[cw_serde]
+        pub struct InstantiateMsg {
+            pub owner: String,
+            pub factory: String,
+            pub astro_token: AssetInfo,
+            pub vesting_contract: String,
+            pub incentivization_fee_info: Option<IncentivizationFeeInfo>,
+            pub guardian: Option<String>,
+        }
+        ```
+
+    </CH.Code>
+
+| **Params**      | **Type** | **Description** |
+| ----------- | ----------- | ----------- |
+| [`owner`](focus://json#2)   | `String`        | Address allowed to change contract parameters         |
+| [`factory`](focus://json#3)   | `String`        | The factory. Only pools registered in it can be staked in and incentivized         |
+| [`astro_token`](focus://json#4:8)   | [`AssetInfo`](../common-types#assetinfo)        | ASTRO         |
+| [`vesting_contract`](focus://json#9)   | `String`        | The Vesting contract that funded ASTRO emissions         |
+| [`incentivization_fee_info`](focus://json#10:16)   | `Option<IncentivizationFeeInfo>`        | The fee (a native coin) and its receiver         |
+| [`guardian`](focus://json#17)   | `Option<String>`        | Address that can also update the blocked tokens list         |
+
+The example uses the Terra deployment's values.
+
+</CH.Section>
+
+## ExecuteMsg
+
+### `deposit`
+
+Stakes the attached tokenfactory LP tokens, on behalf of `recipient` if set (otherwise the sender). Pending rewards are claimed first.
+
+```json
+{
+    "deposit": {
+        "recipient": "terra1..."
+    }
+}
+```
+
+### `receive`
+
+Stakes CW20 LP tokens. Send them to the Incentives contract with a CW20 `send` whose `msg` is the base64 of the hook below.
+
+<CH.Section>
+    <CH.Code>
+
+        ```json json
+        {
+            "send": {
+                "contract": "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
+                "amount": "1000000",
+                "msg": "eyJkZXBvc2l0Ijp7fX0="
+            }
+        }
+        ```
+
+        ```rust incentives.rs
+        #[cw_serde]
+        pub enum Cw20Msg {
+            Deposit {
+                recipient: Option<String>,
+            },
+            DepositFor(String),
+        }
+        ```
+
+    </CH.Code>
+
+`eyJkZXBvc2l0Ijp7fX0=` is `{"deposit":{}}`. `deposit_for` is kept for older pool contracts.
+
+</CH.Section>
+
+### `withdraw`
+
+Unstakes `amount` of an LP token. Pending rewards are claimed first.
+
+```json
+{
+    "withdraw": {
+        "lp_token": "terra1s275y73lfupag0g03nglxaedfnsw5z4m5zc9wk66guy503zuw5ss889tlx",
+        "amount": "1000000"
+    }
+}
+```
+
+`lp_token` is the CW20 address or the tokenfactory denom of the LP token.
+
+### `claim_rewards`
+
+Claims every pending reward for the listed LP tokens.
+
+```json
+{
+    "claim_rewards": {
+        "lp_tokens": [
+            "terra1s275y73lfupag0g03nglxaedfnsw5z4m5zc9wk66guy503zuw5ss889tlx"
+        ]
+    }
+}
+```
+
+### `incentivize`
+
+Adds a reward schedule to a pool. Anyone can call it. Attach the reward (a native coin) and, if it's due, the incentivization fee. For a CW20 reward, first give the Incentives contract an allowance for the amount; it pulls the tokens with `transfer_from`.
+
+This example adds a 4-week USDC.inj schedule to the Terra LUNA/USDC pool's LP token:
+
+<CH.Section>
+    <CH.Code>
+
+        ```json json
+        {
+            "incentivize": {
+                "lp_token": "terra1s275y73lfupag0g03nglxaedfnsw5z4m5zc9wk66guy503zuw5ss889tlx",
+                "schedule": {
+                    "reward": {
+                        "info": {
+                            "native_token": {
+                                "denom": "ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B"
+                            }
+                        },
+                        "amount": "5000000000"
+                    },
+                    "duration_periods": 4
+                }
+            }
+        }
+        ```
+
+        ```rust incentives.rs
+        #[cw_serde]
+        pub struct InputSchedule {
+            pub reward: Asset,
+            pub duration_periods: u64,
+        }
+        ```
+
+    </CH.Code>
+
+| **Params**      | **Type** | **Description** |
+| ----------- | ----------- | ----------- |
+| [`lp_token`](focus://json#3)   | `String`        | The pool's LP token: a CW20 address or a tokenfactory denom         |
+| [`reward`](focus://json#5:12)   | [`Asset`](../common-types#asset)        | The reward token and the total amount for the whole schedule         |
+| [`duration_periods`](focus://json#13)   | `u64`        | Whole weeks after the next Monday, from 1 to 25         |
+
+</CH.Section>
+
+### `incentivize_many`
+
+Same as `incentivize` for several pools in one call. Takes a list of `[lp_token, schedule]` pairs.
+
+```json
+{
+    "incentivize_many": [
+        [
+            "terra1s275y73lfupag0g03nglxaedfnsw5z4m5zc9wk66guy503zuw5ss889tlx",
+            {
+                "reward": {
+                    "info": {
+                        "native_token": {
+                            "denom": "ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B"
+                        }
+                    },
+                    "amount": "5000000000"
+                },
+                "duration_periods": 4
+            }
+        ]
+    ]
+}
+```
+
+### Owner messages
+
+| Message | Who | What |
+| :-- | :-- | :-- |
+| `update_config { astro_token?, vesting_contract?, generator_controller?, guardian?, incentivization_fee_info?, token_transfer_gas_limit? }` | owner | Changes general settings. `token_transfer_gas_limit` is between 400,000 and 1,500,000 |
+| `update_fee_exemptions { add, remove }` | owner | Adds or removes senders that never pay the incentivization fee. Terra 1.5.0 only |
+| `update_blocked_tokens_list { add, remove }` | owner or guardian | Blocked tokens can't be used as rewards, and pools containing them can't get ASTRO emissions |
+| `remove_reward_from_pool { lp_token, reward, bypass_upcoming_schedules, receiver }` | owner | Removes a reward token from a pool and sends its remaining rewards to `receiver` |
+| `claim_orphaned_rewards { limit?, receiver }` | owner | Sends orphaned rewards to `receiver` |
+| `setup_pools { pools }`, `set_tokens_per_second { amount }` | owner (or generator controller for `setup_pools`) | ASTRO emissions. Unused: emissions are zero |
+| `deactivate_pool { lp_token }` | factory | Called when the factory deregisters a pool |
+| `deactivate_blocked_pools {}` | anyone | Removes active pools whose pair type is blocked |
+| `propose_new_owner`, `drop_ownership_proposal`, `claim_ownership` | owner / proposed owner | Two-step ownership transfer |
+
+On Terra, yASTRO is exempt from the fee:
+
+```json
+{
+    "update_fee_exemptions": {
+        "add": [
+            "terra1fe8uj96z7f4jfsnkrdxhchxdhdtx8alr9zjqze76hm2ga6tpxjjq5rdjw7"
+        ],
+        "remove": []
+    }
+}
+```
+
+## QueryMsg
+
+### `config`
+
+Returns the contract configuration. Live Terra response:
+
+```json
+{
+    "owner": "terra1k9j8rcyk87v5jvfla2m9wp200azegjz0eshl7n2pwv852a7ssceqsnn7pq",
+    "factory": "terra14x9fr055x5hvr48hzy2t4q7kvjvfttsvxusa4xsdcy702mnzsvuqprer8r",
+    "generator_controller": null,
+    "astro_token": {
+        "native_token": {
+            "denom": "ibc/8D8A7F7253615E5F76CB6252A1E1BD921D5EDB7BBAAF8913FB1C77FF125D9995"
+        }
+    },
+    "astro_per_second": "0",
+    "total_alloc_points": "0",
+    "vesting_contract": "terra1qyuarnzcc6uuft9n9mltraprreke4v8gvxd8u3nslngxhflhru9qw34nc3",
+    "guardian": null,
+    "incentivization_fee_info": {
+        "fee_receiver": "terra1ygcvxp9s054q8u2q4hvl52ke393zvgj0sllahlycm4mj8dm96zjsa45rzk",
+        "fee": {
+            "denom": "ibc/8D8A7F7253615E5F76CB6252A1E1BD921D5EDB7BBAAF8913FB1C77FF125D9995",
+            "amount": "1500000000"
+        }
+    },
+    "token_transfer_gas_limit": 600000
+}
+```
+
+### `deposit`
+
+The amount of an LP token a user has staked, as a `Uint128`.
+
+```json
+{
+    "deposit": {
+        "lp_token": "terra1s275y73lfupag0g03nglxaedfnsw5z4m5zc9wk66guy503zuw5ss889tlx",
+        "user": "terra1..."
+    }
+}
+```
+
+### `pending_rewards`
+
+The rewards a user can claim for an LP token, as a list of [`Asset`](../common-types#asset)s.
+
+```json
+{
+    "pending_rewards": {
+        "lp_token": "terra1s275y73lfupag0g03nglxaedfnsw5z4m5zc9wk66guy503zuw5ss889tlx",
+        "user": "terra1..."
+    }
+}
+```
+
+### `pool_info`
+
+Total LP staked, every reward with its rate and index, and the last update time.
+
+<CH.Section>
+    <CH.Code>
+
+        ```json json
+        {
+            "pool_info": {
+                "lp_token": "terra1s275y73lfupag0g03nglxaedfnsw5z4m5zc9wk66guy503zuw5ss889tlx"
+            }
+        }
+        ```
+
+        ```rust incentives.rs
+        #[cw_serde]
+        pub struct PoolInfoResponse {
+            pub total_lp: Uint128,
+            pub rewards: Vec<RewardInfo>,
+            pub last_update_ts: u64,
+        }
+
+        #[cw_serde]
+        pub struct RewardInfo {
+            pub reward: RewardType,
+            pub rps: Decimal256,
+            pub index: Decimal256,
+            pub orphaned: Decimal256,
+        }
+        ```
+
+    </CH.Code>
+
+Each reward is either `{"int": <AssetInfo>}` (ASTRO emissions, no longer used) or `{"ext": {"info": <AssetInfo>, "next_update_ts": ...}}` (an external schedule). `reward_info { lp_token }` returns the same `Vec<RewardInfo>` on its own.
+
+</CH.Section>
+
+### `external_reward_schedules`
+
+The schedules of one reward token in a pool: `rps`, `start_ts` and `end_ts` for each.
+
+```json
+{
+    "external_reward_schedules": {
+        "reward": "ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B",
+        "lp_token": "terra1s275y73lfupag0g03nglxaedfnsw5z4m5zc9wk66guy503zuw5ss889tlx",
+        "start_after": null,
+        "limit": 10
+    }
+}
+```
+
+### `is_fee_expected`
+
+Whether adding a schedule of `reward` to the pool would pay the incentivization fee. Returns a `bool`. Pass `sender` to account for fee exemptions (Terra 1.5.0 only).
+
+```json
+{
+    "is_fee_expected": {
+        "lp_token": "terra1s275y73lfupag0g03nglxaedfnsw5z4m5zc9wk66guy503zuw5ss889tlx",
+        "reward": "ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B",
+        "sender": "terra1..."
+    }
+}
+```
+
+### `fee_exemptions`
+
+The addresses that don't pay the incentivization fee, paginated (Terra 1.5.0 only). On Terra it returns `["terra1fe8uj96z7f4jfsnkrdxhchxdhdtx8alr9zjqze76hm2ga6tpxjjq5rdjw7"]` (yASTRO).
+
+```json
+{
+    "fee_exemptions": {
+        "start_after": null,
+        "limit": 50
+    }
+}
+```
+
+### Other queries
+
+| Query | Returns |
+| :-- | :-- |
+| `pool_stakers { lp_token, start_after?, limit? }` | `[address, amount]` pairs of a pool's stakers |
+| `blocked_tokens_list { start_after?, limit? }` | The blocked tokens, as `AssetInfo`s |
+| `list_pools { start_after?, limit? }` | Every LP token ever incentivized |
+| `active_pools {}` | Pools receiving ASTRO emissions, with their allocation points. Empty: emissions are zero |
+
+Page limits are at most 50.

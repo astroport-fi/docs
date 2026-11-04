@@ -14,6 +14,10 @@ import LP9Url from '@site/static/img/web-app-tutorials/farmers-fields/staking/9.
 
 # Staking/Unstaking LP Tokens
 
+Staking your LP tokens in Astroport's Incentives contract is how you earn a pool's incentives: external incentive schedules and, for yASTRO pools on Terra, forwarded yASTRO rewards. There are no ASTRO emissions anymore. Unstaked LP tokens still earn trading fees. See [Astro Incentives](../../astro-incentives).
+
+Claim your rewards at any time from the Rewards Center in the app.
+
 ## Staking LP Tokens 
 
 ### Step 1: Go to the Astroport Web App pools tab: https://app.astroport.fi/pools
@@ -24,15 +28,15 @@ import LP9Url from '@site/static/img/web-app-tutorials/farmers-fields/staking/9.
 
 <img src={LP2Url} style={{ paddingBottom: 10 }} />
 
-The simplest way to stake LP tokens into the generator contract is to auto stake them at the time that you provide liquidity. This can be done in the same contract message and can also be completed through the Astroport UI. 
+The simplest way to stake LP tokens in the Incentives contract is to auto-stake them at the time that you provide liquidity. This is done in the same transaction and can be completed through the Astroport app. 
 
-When providing liqudiity, select "On" to "Stake LP tokens for Generator rewards". 
+When providing liquidity, turn on the option to stake your LP tokens. (Older screenshots call this "Stake LP tokens for Generator rewards"; the Generator has been replaced by the Incentives contract.)
 
 ### Step 2: Staking LP Tokens 
 
 <img src={LP3Url} style={{ paddingBottom: 10 }} />
 
-To stake LP tokens manually, select "Stake Liquidity" from the Pools tab page. This will lead you to a UI where you can select the percentage of avialiable LP tokens you'd like to stake in the Generator contract for ASTRO emissions. 
+To stake LP tokens manually, select "Stake Liquidity" from the Pools tab page. This will lead you to a UI where you can select the percentage of available LP tokens you'd like to stake in the Incentives contract. 
 
 ### Step 3: Confirm Transaction
 
@@ -58,9 +62,9 @@ Select "Unstake Liquidity" to move forward.
 
 <img src={LP7Url} style={{ paddingBottom: 10 }} />
 
-The UI will allow you to select the percentage of avialiable LP tokens staked in the Generator contract that you'd like to withdraw. To unstake LP tokens, select "Unstake LP Tokens".
+The UI will allow you to select the percentage of available LP tokens staked in the Incentives contract that you'd like to unstake. To unstake LP tokens, select "Unstake LP Tokens".
 
-Note that this simply unstakes LP tokens and returns the LP tokens from the Generator contract back to your address. You can verify this by checking your LP token balance in your wallet You still need to withdraw your LP tokens to retrieve the underlying liquidity. 
+Note that this simply unstakes LP tokens and returns them from the Incentives contract to your address. You can verify this by checking your LP token balance in your wallet. You still need to withdraw your LP tokens to retrieve the underlying liquidity (see [Providing/Withdrawing Liquidity](./providing-withdrawing-liquidity)). 
 
 ### Step 3: Confirm Transaction
 

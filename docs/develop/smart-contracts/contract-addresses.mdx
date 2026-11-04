@@ -6,164 +6,105 @@ import Admonition from "@theme/Admonition";
 
 # Contract Addresses
 
+Astroport runs on Terra (`phoenix-1`) and Neutron (`neutron-1`). Both deployments are in long-term support: the contracts stay live, and changes are limited to security fixes and maintenance. Versions are the `cw2` contract versions reported on chain (checked on 2026-11-04).
+
 <Admonition type="info" title="NOTE">
-  For a complete list of addresses, visit the official [Github
-  changelog](https://github.com/astroport-fi/astroport-changelog).
+  Testnet deployments are no longer maintained. Astroport no longer supports Sei, Injective, Osmosis or Terra Classic.
 </Admonition>
 
-## Neutron
+## Core
 
-The following are the addresses for the Astroport `neutron-1` mainnet deployment.
+### Terra
 
-|       Contract       | CodeID | Address                                                                |
-| :------------------: | :----: | :--------------------------------------------------------------------- |
-|       Assembly       |        |                                                                        |
-|    IBC Controller    |   31   | `neutron1ffus553eet978k024lmssw0czsxwr97mggyv85lpcsdkft8v9ufsz3sa07`   |
-|      Satellite       |        |                                                                        |
-|       Factory        |   33   | `neutron1hptk0k5kng7hjy35vmh009qd5m6l33609nypgf2yc6nqnewduqasxplt4e`   |
-|      Incentives      |        | `neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch`   |
-|      Generator       |   32   | `neutron1jz58yjay8uq8zkfw95ngyv3m2wfs2zjef9vdz75d9pa46fdtxc5sxtafny`   |
-|       Tributes       |  3747  | `neutron1u0rpg206k9f3mqf8m33z9pgav9aveu2cjaadtvst8jk2gm8aauwq2hdppt`   |
-|        Maker         |   38   | `neutron1unc0549k2f0d7mjjyfm94fuz2x53wrx3px0pr55va27grdgmspcqgzfr8p`   |
-|    Coin Registry     |        |                                                                        |
-|         Pair         |   35   |                                                                        |
-|     Pair-Stable      |   40   |                                                                        |
-|        Router        |   39   | `neutron1eeyntmsq448c68ez06jsy6h2mtjke5tpuplnwtjfwcdznqmw72kswnlmm0`   |
-|      CW20 Token      |   36   |                                                                        |
-| ASTRO Token Address  |        | `ibc/5751B8BCDA688FD0A8EC0B292EEF1CDEAB4B766B63EC632778B196D317C40C3A` |
-|       Staking        |        |                                                                        |
-|     xASTRO Token     |        |                                                                        |
-|       Vesting        |   37   | `neutron178d2p84ldlzcl53clc25uy6mx3trazxdy08akhjp3qf5chlmccgq6hv2pl`   |
-| Native Coin Registry |   34   | `neutron1jzzv6r5uckwd64n6qan3suzker0kct5w565f6529zjyumfcx96kqtcswn3`   |
-|      Whitelist       |        |                                                                        |
+| Contract | Version | Address |
+| :-- | :-- | :-- |
+| Factory | `astroport-factory` 1.8.0 | [terra14x9fr055x5hvr48hzy2t4q7kvjvfttsvxusa4xsdcy702mnzsvuqprer8r](https://terrasco.pe/mainnet/address/terra14x9fr055x5hvr48hzy2t4q7kvjvfttsvxusa4xsdcy702mnzsvuqprer8r) |
+| Router 2.0 (recommended) | `astroport-router` 2.0.0 | [terra1txm8xcy8mete9e5zh5ktqr4jm4cq4ja8djttg3zkqll64x4ksq7qknaesf](https://terrasco.pe/mainnet/address/terra1txm8xcy8mete9e5zh5ktqr4jm4cq4ja8djttg3zkqll64x4ksq7qknaesf) |
+| Router 1.3 | `astroport-router` 1.3.1 | [terra18plp90j0zd596zt3zdsf0w9vvk5ukwlwzwkksxv9mdu8rscat9sqndk5qz](https://terrasco.pe/mainnet/address/terra18plp90j0zd596zt3zdsf0w9vvk5ukwlwzwkksxv9mdu8rscat9sqndk5qz) |
+| Native coin registry | `astroport-native-coin-registry` 1.1.0 | [terra1zuf8fla02926nhpfvk09k2pg6qv9aayflp0qt4a0msppu2h4exqs6af275](https://terrasco.pe/mainnet/address/terra1zuf8fla02926nhpfvk09k2pg6qv9aayflp0qt4a0msppu2h4exqs6af275) |
+| Liquidity manager | | [terra1pj43kem5evz2mhynahd20m7etktcy497rat3mfeh7y074heqfu9s48v7q4](https://terrasco.pe/mainnet/address/terra1pj43kem5evz2mhynahd20m7etktcy497rat3mfeh7y074heqfu9s48v7q4) |
 
-The following are the addresses for the Astroport `pion-1` testnet deployment.
+### Neutron
 
-|      Contract       | CodeID | Address                                                                |
-| :-----------------: | :----: | :--------------------------------------------------------------------- |
-|      Assembly       |        |                                                                        |
-|   IBC Controller    |        |                                                                        |
-|      Satellite      |        | `neutron18mcny8tjmy7rw4x3j9ph86gk0hk47dr5crnfc4njqaxc6xvv9a3sumj0cy`   |
-|       Factory       |        | `neutron1jj0scx400pswhpjes589aujlqagxgcztw04srynmhf0f6zplzn2qqmhwj7`   |
-|     Incentives      |        | `neutron1slxs8heecwyw0n6zmj7unj3nenrfhk2zpagfz2lt87dnevmksgwsq9adkn`   |
-|      Generator      |        | `neutron1mgersa0snsudccqrtsyppxerq7unwtxv45t9p9l66hrmcwhlkf5q85a4af`   |
-|      Tributes       |        | `neutron1al97ht3j275l7lf88qwnn3tjcfmhdtu6z3hv7dasduqkuee94rtsnm6kve`   |
-|        Maker        |        | `neutron18hswpyxvgpl3zfqp0pfyz5wdlv3ky79n5jjr70hdxwy99zr80kgsrfdyrf`   |
-|    Coin Registry    |        |                                                                        |
-|        Pair         |  114   |                                                                        |
-|     Pair-Stable     |  110   |                                                                        |
-|       Router        |        | `neutron12jm24l9lr9cupufqjuxpdjnnweana4h66tsx5cl800mke26td26sq7m05p`   |
-|        Token        |        |                                                                        |
-| ASTRO Token Address |        | `ibc/EFB00E728F98F0C4BBE8CA362123ACAB466EDA2826DC6837E49F4C1902F21BBA` |
-|       Staking       |        |                                                                        |
-|    xASTRO Token     |        |                                                                        |
-|       Vesting       |        | `neutron1t5agy2p7x9zkt8jnx7pmg2n9qe8d5c08t4nw2t250krx22ly2wjssgcm25`   |
-|    Coin Registry    |        | `neutron1neyg8tpqtj9vmqwqfv34qtq0jsmp340hmsesz4rke6jep6yh5kys5378jn`   |
-|      Whitelist      |        |                                                                        |
+| Contract | Version | Address |
+| :-- | :-- | :-- |
+| Factory | `astroport-factory` 1.9.0 | [neutron1hptk0k5kng7hjy35vmh009qd5m6l33609nypgf2yc6nqnewduqasxplt4e](https://neutron.celat.one/neutron-1/contracts/neutron1hptk0k5kng7hjy35vmh009qd5m6l33609nypgf2yc6nqnewduqasxplt4e) |
+| Router 2.0 (recommended) | `astroport-router` 2.0.0 | [neutron1xuh7nqt486gkvkxdwt773fzs5uptxy0ylzehm3spq7rx8r2kaspqzu0hv6](https://neutron.celat.one/neutron-1/contracts/neutron1xuh7nqt486gkvkxdwt773fzs5uptxy0ylzehm3spq7rx8r2kaspqzu0hv6) |
+| Router 1.3 | `astroport-router` 1.3.1 | [neutron1rwj6mfxzzrwskur73v326xwuff52vygqk73lr7azkehnfzz5f5wskwekf4](https://neutron.celat.one/neutron-1/contracts/neutron1rwj6mfxzzrwskur73v326xwuff52vygqk73lr7azkehnfzz5f5wskwekf4) |
+| Native coin registry | `astroport-native-coin-registry` 1.1.0 | [neutron1jzzv6r5uckwd64n6qan3suzker0kct5w565f6529zjyumfcx96kqtcswn3](https://neutron.celat.one/neutron-1/contracts/neutron1jzzv6r5uckwd64n6qan3suzker0kct5w565f6529zjyumfcx96kqtcswn3) |
+| Liquidity manager | | [neutron1wcnxmv6q2uq2nlme9f8ema6l37rkdtk3z7amvqdz39m88kdtzhfqllhv2m](https://neutron.celat.one/neutron-1/contracts/neutron1wcnxmv6q2uq2nlme9f8ema6l37rkdtk3z7amvqdz39m88kdtzhfqllhv2m) |
 
-## Terra
+### Pools
 
-The following are the addresses for the Astroport `phoenix-1` mainnet deployment.
+Pools are not listed here. Every pool created through the factory can be looked up with the factory's [`pair`](./factory#pair) and [`pairs`](./factory#pairs) queries, and each pool reports its own address, assets, LP token and type with its `pair {}` query.
 
-|    Contract    | CodeID | Address                                                            |
-| :------------: | :----: | :----------------------------------------------------------------- |
-|    Assembly    |  1127  | `terra1k9j8rcyk87v5jvfla2m9wp200azegjz0eshl7n2pwv852a7ssceqsnn7pq` |
-| IBC Controller |  1109  | `terra1fkuhmq52pj08qqffp0elrvmzel8zz857x0pjjuuaar54mgcpe35s9km660` |
-|   CW20 ICS20   |        | terra1jhfjnm39y3nn9l4520mdn4k5mw23nz0674c4gsvyrcr90z9tqcvst22fce   |
-|   Satellite    |        |                                                                    |
-|    Factory     |        | `terra14x9fr055x5hvr48hzy2t4q7kvjvfttsvxusa4xsdcy702mnzsvuqprer8r` |
-|   Incentives   |        | `terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x` |
-|   Generator    |        | `terra1ksvlfex49desf4c452j6dewdjs6c48nafemetuwjyj6yexd7x3wqvwa7j9` |
-|     Maker      |        | `terra1ygcvxp9s054q8u2q4hvl52ke393zvgj0sllahlycm4mj8dm96zjsa45rzk` |
-| Coin Registry  |        |                                                                    |
-|      Pair      |  392   |                                                                    |
-|  Pair-Stable   |  428   |                                                                    |
-|     Router     |        | `terra1j8hayvehh3yy02c2vtw5fdhz9f4drhtee8p5n5rguvg3nyd6m83qd2y90a` |
-|     Token      |   69   | `terra1nsuqsk6kh58ulczatwev87ttq2z6r3pusulg9r24mfj2fvtzd4uq3exn26` |
-|    Staking     |        | `terra1nyu6sk9rvtvsltm7tjjrp6rlavnm3e4sq03kltde6kesam260f8szar8ze` |
-|  xASTRO Token  |        | `terra1x62mjnme4y0rdnag3r8rfgjuutsqlkkyuh4ndgex0wl3wue25uksau39q8` |
-|    Vesting     |        | `terra1qyuarnzcc6uuft9n9mltraprreke4v8gvxd8u3nslngxhflhru9qw34nc3` |
-|   Whitelist    |   70   |                                                                    |
+Six Neutron pools that were drained in the September 2026 incident now run `astroport-pair-exit-only` 1.0.0: they only allow balanced withdrawals. The migration keeps their stored cw2 version, so they still report the pool contract they ran before. See [Exit-only pools](./swap-pairs/exit-only-pools).
 
-The following are the addresses for the Astroport `pisco-1` testnet deployment.
+## Tokenomics
 
-|    Contract    | CodeID | Address                                                            |
-| :------------: | :----: | :----------------------------------------------------------------- |
-|    Assembly    |  7680  | `terra195m6n5xq4rkjy47fn5y3s08tfmj3ryknj55jqvgq2y55zul9myzsgy06hk` |
-| IBC Controller |        | `terra18kaw48val5d9cy79xl0k7kq3x6y077v0hq9gwhwp7cnawn2mjr2qdwa2w2` |
-|   Satellite    |        | ``                                                                 |
-|    Factory     |  8066  | `terra1z3y69xas85r7egusa0c7m5sam0yk97gsztqmh8f2cc6rr4s4anysudp7k0` |
-|   Incentives   |        | `terra1ujqta8jx4w7z224q0heunfx4rz57e92kkeyrgmry3yz2qf5z3xlsnrk0eq` |
-|   Generator    |        | `terra1gc4d4v82vjgkz0ag28lrmlxx3tf6sq69tmaujjpe7jwmnqakkx0qm28j2l` |
-|     Maker      |  8068  | `terra146ffs60x8seza3cq9a447mhw0zqeylkj37ye4uj7rl2uwhvgq89sts2ess` |
-| Coin Registry  |  8064  | `terra1lvvsa0ctq36vugy2l0zpuh4e8a0c2tuxdt07j9d388svevehy9pq6qwwkq` |
-|      Pair      |  3172  |                                                                    |
-|  Pair-Stable   |  303   |                                                                    |
-|     Router     |  8067  | `terra1na348k6rvwxje9jj6ftpsapfeyaejxjeq6tuzdmzysps20l6z23smnlv64` |
-|     Token      |  300   | `terra167dsqkh2alurx997wmycw9ydkyu54gyswe3ygmrs4lwume3vmwks8ruqnv` |
-|    Staking     |        | `terra19t8ffmz6q2rdm3rllyksd6sex6n650a4anttzzvz9mf8mqr4nkrq44cyu6` |
-|  xASTRO Token  |        | `terra1ctzthkc0nzseppqtqlwq9mjwy9gq8ht2534rtcj3yplerm06snmqfc5ucr` |
-|    Vesting     |  8069  | `terra1703s0etk3u07ur6qjjrxpmjsccfmsfnfwf0h0dket6srz066cemqjxlt78` |
-|   Whitelist    |  301   |                                                                    |
+### Terra
 
-## Sei
+| Contract | Version | Address |
+| :-- | :-- | :-- |
+| ASTRO (IBC from Neutron) | | `ibc/8D8A7F7253615E5F76CB6252A1E1BD921D5EDB7BBAAF8913FB1C77FF125D9995` |
+| Maker | `astroport-maker` 2.0.0 | [terra1ygcvxp9s054q8u2q4hvl52ke393zvgj0sllahlycm4mj8dm96zjsa45rzk](https://terrasco.pe/mainnet/address/terra1ygcvxp9s054q8u2q4hvl52ke393zvgj0sllahlycm4mj8dm96zjsa45rzk) |
+| yASTRO | `astroport-yastro` 1.0.0 | [terra1fe8uj96z7f4jfsnkrdxhchxdhdtx8alr9zjqze76hm2ga6tpxjjq5rdjw7](https://terrasco.pe/mainnet/address/terra1fe8uj96z7f4jfsnkrdxhchxdhdtx8alr9zjqze76hm2ga6tpxjjq5rdjw7) |
+| Incentives | `astroport-incentives` 1.5.0 | [terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x](https://terrasco.pe/mainnet/address/terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x) |
+| Vesting | `astroport-vesting` 1.4.0 | [terra1qyuarnzcc6uuft9n9mltraprreke4v8gvxd8u3nslngxhflhru9qw34nc3](https://terrasco.pe/mainnet/address/terra1qyuarnzcc6uuft9n9mltraprreke4v8gvxd8u3nslngxhflhru9qw34nc3) |
+| ASTRO CW20 (legacy) | `astroport-token` 1.0.0 | [terra1nsuqsk6kh58ulczatwev87ttq2z6r3pusulg9r24mfj2fvtzd4uq3exn26](https://terrasco.pe/mainnet/address/terra1nsuqsk6kh58ulczatwev87ttq2z6r3pusulg9r24mfj2fvtzd4uq3exn26) |
+| ASTRO CW20 to IBC ASTRO converter pool | `astroport-pair-converter` 1.1.0 | [terra1ala9d5sddzxf8jdgyd9m6s0jkwy5a724938zgwe9zmh5rwtyzzfql59par](https://terrasco.pe/mainnet/address/terra1ala9d5sddzxf8jdgyd9m6s0jkwy5a724938zgwe9zmh5rwtyzzfql59par) |
 
-The following are the addresses for the Astroport `atlantic-2` testnet deployment.
+### Neutron
 
-|      Contract       | CodeID | Address                                                          |
-| :-----------------: | :----: | :--------------------------------------------------------------- |
-|      Assembly       |        |                                                                  |
-|   IBC Controller    |        |                                                                  |
-|      Satellite      |        | `sei1uj3cnkg4h7s88vvj7xqpxgk9hqd3qul3vnuws4jqmfks3vmu877s27mq27` |
-|       Factory       |        | `sei1cp0hjmhwn9mz8rd4t29zjx2sks5mlxsjzhch2ef3yr4q2ssqwuvst5lyc9` |
-|     Incentives      |        | `sei1pxpy0kwgw3aurfmy604fhh3nszekqn8vc90y0xa66zs2h8pkfemsxrs2fp` |
-|      Generator      |        | `sei1z272lfg4vwqtg4tr7qywy6hpx4y3vwke0pnsjxvjtqjuju5v3u3qfnhu6k` |
-|        Maker        |        | `sei1mmg3lfnwgxe7340ty0tvqznnn9cv0lyakvjzjclpfvwfc00sc2kqf45ezn` |
-|    Coin Registry    |        |                                                                  |
-|        Pair         |  233   |                                                                  |
-|     Pair-Stable     |  229   |                                                                  |
-|       Router        |        | `sei1n389228apfytkxgvjkwl3acakgl8evpx7z5nghwvluhwsjwq37gqjatsxy` |
-|        Token        |        |                                                                  |
-| ASTRO Token Address |        | `sei1ghmydqrcxuhugwttfnqtq8tzskj9ya8nclxs9xmlw0yu6cg7mdgsg3wmgd` |
-|       Staking       |        |                                                                  |
-|    xASTRO Token     |        |                                                                  |
-|       Vesting       |        | `sei1ghmydqrcxuhugwttfnqtq8tzskj9ya8nclxs9xmlw0yu6cg7mdgsg3wmgd` |
-|    Coin Registry    |        | `sei1jg6rauqczaswmfnlm0c7tuesgk82350hm2k7v6577yx25p9kg65s968tqq` |
-|      Whitelist      |        |                                                                  |
+| Contract | Version | Address |
+| :-- | :-- | :-- |
+| ASTRO (tokenfactory) | | `factory/neutron1ffus553eet978k024lmssw0czsxwr97mggyv85lpcsdkft8v9ufsz3sa07/astro` |
+| Maker | `astroport-maker` 2.0.0 | [neutron1unc0549k2f0d7mjjyfm94fuz2x53wrx3px0pr55va27grdgmspcqgzfr8p](https://neutron.celat.one/neutron-1/contracts/neutron1unc0549k2f0d7mjjyfm94fuz2x53wrx3px0pr55va27grdgmspcqgzfr8p) |
+| ASTRO burner (ASTRO denom admin) | `astroport-astro-burner` 1.0.0 | [neutron1wl7akesary9ac3h5k3mjw3lj5e93pvpwlc8xjh05aug7zgl084gq8xhjxp](https://neutron.celat.one/neutron-1/contracts/neutron1wl7akesary9ac3h5k3mjw3lj5e93pvpwlc8xjh05aug7zgl084gq8xhjxp) |
+| Incentives | `astroport-incentives` 1.4.0 | [neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch](https://neutron.celat.one/neutron-1/contracts/neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch) |
+| Vesting | `astroport-vesting` 1.4.0 | [neutron178d2p84ldlzcl53clc25uy6mx3trazxdy08akhjp3qf5chlmccgq6hv2pl](https://neutron.celat.one/neutron-1/contracts/neutron178d2p84ldlzcl53clc25uy6mx3trazxdy08akhjp3qf5chlmccgq6hv2pl) |
+| Builder unlock | `builder-unlock` 3.0.0 | [neutron1yfzj68we8q50mv2t37p4dqxwwz7d5uz0g54cgnsn8rwa0umnf3sqzz4g8y](https://neutron.celat.one/neutron-1/contracts/neutron1yfzj68we8q50mv2t37p4dqxwwz7d5uz0g54cgnsn8rwa0umnf3sqzz4g8y) |
+| Old IBC ASTRO to ASTRO converter pool | `astroport-pair-converter` 1.1.0 | [neutron12gzdev6htsfvfu9hp220w6zjmf4gruwas4hpadtekpmm666xvpcs4fqucl](https://neutron.celat.one/neutron-1/contracts/neutron12gzdev6htsfvfu9hp220w6zjmf4gruwas4hpadtekpmm666xvpcs4fqucl) |
 
-## Injective
+## Protocol control
 
-The following are the addresses for the Astroport `injective-1` mainnet deployment.
+The "Astroport - Contributors" DAO DAO on each chain controls the protocol. It executes through the existing protocol owner contracts (the Assembly on Neutron, the satellite on Terra), which own or admin the other contracts. See [Access Controls and Permissions](./access-controls-and-permissions).
 
-|   Contract    | CodeID | Address                                                                |
-| :-----------: | :----: | :--------------------------------------------------------------------- |
-|   Satellite   |   20   | `inj1rsrefjc7xnl6d6fm6avl706nu5y6nkpxffyevq`                           |
-|    Factory    |   21   | `inj19aenkaj6qhymmt746av8ck4r8euthq3zmxr2r6`                           |
-|  Incentives   |        | `inj164pyppndppdmazfjrvecajnwcs3hmq06agn4ka`                           |
-|   Generator   |   22   | `inj1z354nkau8f0dukgwctq9mladvdwu6zcj8k4928`                           |
-|     Maker     |   23   | `inj1sf4wtl6h5sjlvvl6khz6eecly72fl9kgsnfesv`                           |
-| Coin Registry |   24   | `inj1k5uunty0xf353jut6eq0zgk6qy4grc9wufut2c`                           |
-|     Pair      |   25   |                                                                        |
-|  Pair-Stable  |   26   |                                                                        |
-|    Router     |   27   | `inj17y5zvse30629t7r37xsdj73xsqp7qsdruuvkqh`                           |
-|     Token     |   28   | `ibc/EBD5A24C554198EBAF44979C5B4D2C2D312E6EBAB71962C92F735499C7575839` |
-|    Vesting    |   29   | `inj1lq7etsvahc3rn6jnj3chvpx4d8hxwp4c3xy2wt`                           |
-|   Whitelist   |   30   |                                                                        |
+### Terra
 
-The following are the addresses for the Astroport `injective-888` testnet deployment.
+| Contract | Version | Address |
+| :-- | :-- | :-- |
+| Astroport - Contributors (DAO DAO) | `dao-dao-core` 2.7.0 | [terra1txh3xyk0yzkhwzwckzh8sswlywrhrvkr2fe97rfmxvt6d2yzjznsynrqnq](https://terrasco.pe/mainnet/address/terra1txh3xyk0yzkhwzwckzh8sswlywrhrvkr2fe97rfmxvt6d2yzjznsynrqnq) |
+| Satellite ("Astroport Assembly" on Terra), protocol owner | `astro-satellite` 1.2.0 | [terra1k9j8rcyk87v5jvfla2m9wp200azegjz0eshl7n2pwv852a7ssceqsnn7pq](https://terrasco.pe/mainnet/address/terra1k9j8rcyk87v5jvfla2m9wp200azegjz0eshl7n2pwv852a7ssceqsnn7pq) |
+| Treasury | `astroport-cw1-whitelist` 1.0.0 | [terra12ncurr62xe93xrsh2drp4zvehj0gn32lfnshr8k0p4xfyju2knwq2qgmh2](https://terrasco.pe/mainnet/address/terra12ncurr62xe93xrsh2drp4zvehj0gn32lfnshr8k0p4xfyju2knwq2qgmh2) |
+| Astroport - Development Fund (DAO DAO) | `dao-dao-core` 2.7.0 | [terra19gzq28ktdwsvkqzrr02u705a07hjwqmxse76552x7azxuwsej4nsm200yj](https://terrasco.pe/mainnet/address/terra19gzq28ktdwsvkqzrr02u705a07hjwqmxse76552x7azxuwsej4nsm200yj) |
+| Emergency multisig | | [terra1alsky8h94xgfz24hsjq3cylw4vykgzrx6jr6sq](https://terrasco.pe/mainnet/address/terra1alsky8h94xgfz24hsjq3cylw4vykgzrx6jr6sq) |
 
-|      Contract       | CodeID | Address                                      |
-| :-----------------: | :----: | :------------------------------------------- |
-|      Satellite      |  508   | `inj1ng84tp5d9502fmxsjsc9ggkl8t7w2m5tuah8g4` |
-|       Factory       |  336   | `inj1c4e2787cwawlqslph0yzn62wq4xpzzq9y9kjwj` |
-|     Incentives      |        | `inj16eezawfevwj6vqlu75jk602ekcrkfgsgs9farr` |
-|      Generator      |  362   | `inj1dfnw7f5rzxupj89fqp7qz65jvsu464xx2jl8lh` |
-|        Maker        |  380   | `inj10ruu3f4n7rxjcvqq39xmcea0s7gsnf7k806yuy` |
-|    Coin Registry    |  413   | `inj1jtt079zrgn2hyjvekkautrtg8jnc4j2ju0fxnf` |
-|        Pair         |  203   |                                              |
-|     Pair-Stable     |  335   |                                              |
-|       Router        |  206   | `inj1rlv7fsxgu2a6z5xzemcumek0e0cy03xl62zgju` |
-|        Token        |   25   | `inj1faccd69y862f73h3jay3qvxqfxtxt9wn43v564` |
-|       Vesting       |  209   | `inj1f9fx5stfugh243p8yff2qtrjvkyqknl3dpne4f` |
-|      Whitelist      |  173   |                                              |
-| Proxy Reward Holder |        | `inj10gnf6jxqe6xyzv080ycgqe8eg8apd7rgkdk92g` |
+### Neutron
+
+| Contract | Version | Address |
+| :-- | :-- | :-- |
+| Astroport - Contributors (DAO DAO) | `dao-dao-core` 2.7.0 | [neutron1rfxjrha2cqrt92vcx9rfwz3tz287kw4suv6m0je7hcn6sh3l7etscn03mc](https://neutron.celat.one/neutron-1/contracts/neutron1rfxjrha2cqrt92vcx9rfwz3tz287kw4suv6m0je7hcn6sh3l7etscn03mc) |
+| Assembly, protocol owner | `astro-assembly` 3.0.1 | [neutron1ffus553eet978k024lmssw0czsxwr97mggyv85lpcsdkft8v9ufsz3sa07](https://neutron.celat.one/neutron-1/contracts/neutron1ffus553eet978k024lmssw0czsxwr97mggyv85lpcsdkft8v9ufsz3sa07) |
+| Treasury | `astroport-whitelist` 2.0.0 | [neutron19sq60cxtsjcx7vw25c63wyt27fxevuh6l7vxcn04u0t0rueyfpvq4mc75l](https://neutron.celat.one/neutron-1/contracts/neutron19sq60cxtsjcx7vw25c63wyt27fxevuh6l7vxcn04u0t0rueyfpvq4mc75l) |
+| Astroport - Development Fund (DAO DAO SubDAO) | `dao-dao-core` 2.6.0 | [neutron1atj3u6l6t4y90d0csxgn8ax6psyzjxq2rqcrn4qa656ked3ep06sck0s6k](https://neutron.celat.one/neutron-1/contracts/neutron1atj3u6l6t4y90d0csxgn8ax6psyzjxq2rqcrn4qa656ked3ep06sck0s6k) |
+| Emergency multisig | | [neutron1ac2fddfcr3ax4ggarhx0vcaj32fmatsx8p5d6a](https://www.mintscan.io/neutron/address/neutron1ac2fddfcr3ax4ggarhx0vcaj32fmatsx8p5d6a) |
+
+## Retired
+
+These contracts are no longer part of the active protocol. They are listed so they can still be looked up.
+
+| Chain | Contract | Version | Address | Status |
+| :-- | :-- | :-- | :-- | :-- |
+| Neutron | xASTRO staking | `astroport-staking` 2.3.3 | [neutron1zlf3hutsa4qnmue53lz2tfxrutp8y2e3rj4nkghg3rupgl4mqy8s5jgxsn](https://neutron.celat.one/neutron-1/contracts/neutron1zlf3hutsa4qnmue53lz2tfxrutp8y2e3rj4nkghg3rupgl4mqy8s5jgxsn) | Retired, no `enter` or `leave`. See [xASTRO staking (retired)](./tokenomics/staking) |
+| Neutron | xASTRO (tokenfactory) | | `factory/neutron1zlf3hutsa4qnmue53lz2tfxrutp8y2e3rj4nkghg3rupgl4mqy8s5jgxsn/xASTRO` | Retired, no value, can't be redeemed |
+| Neutron | xASTRO payout | `astroport-xastro-payout` 1.0.0 | [neutron1rpuj6wuu9s3pg3jx9ejkpengdrrlrgxsgc0mzd5t8yl54wse78aqgwrqcf](https://neutron.celat.one/neutron-1/contracts/neutron1rpuj6wuu9s3pg3jx9ejkpengdrrlrgxsgc0mzd5t8yl54wse78aqgwrqcf) | Finished |
+| Neutron | vxASTRO (voting escrow) | `astroport-voting-escrow` 1.2.0 | [neutron17tr94hgtjrd0ehexc7lau9e0vk9y5v6a4qs0q4lu6yy2zyshymtqtrfxt8](https://neutron.celat.one/neutron-1/contracts/neutron17tr94hgtjrd0ehexc7lau9e0vk9y5v6a4qs0q4lu6yy2zyshymtqtrfxt8) | No voting. Positions unwind through their normal unlock |
+| Neutron | Emissions controller | `astroport-emissions-controller` 1.2.0 | [neutron1pcy54ah2hx3679wdpvcy8z2usqwaqeqxp37k7mvd4fvqahfcfsfszag2sn](https://neutron.celat.one/neutron-1/contracts/neutron1pcy54ah2hx3679wdpvcy8z2usqwaqeqxp37k7mvd4fvqahfcfsfszag2sn) | Retired, emissions are zero |
+| Neutron | Tributes | `astroport-tributes` 1.1.0 | [neutron1u0rpg206k9f3mqf8m33z9pgav9aveu2cjaadtvst8jk2gm8aauwq2hdppt](https://neutron.celat.one/neutron-1/contracts/neutron1u0rpg206k9f3mqf8m33z9pgav9aveu2cjaadtvst8jk2gm8aauwq2hdppt) | Retired |
+| Neutron | Generator | `astroport-generator` 2.3.2 | [neutron1jz58yjay8uq8zkfw95ngyv3m2wfs2zjef9vdz75d9pa46fdtxc5sxtafny](https://neutron.celat.one/neutron-1/contracts/neutron1jz58yjay8uq8zkfw95ngyv3m2wfs2zjef9vdz75d9pa46fdtxc5sxtafny) | Legacy, replaced by Incentives |
+| Terra | xASTRO payout | `astroport-xastro-payout` 1.0.0 | [terra1xvth5fren7dqzr4dt92jfcexjszv9uxkalksnnwdg2plxq3yxw3sq7hue0](https://terrasco.pe/mainnet/address/terra1xvth5fren7dqzr4dt92jfcexjszv9uxkalksnnwdg2plxq3yxw3sq7hue0) | Finished |
+| Terra | xASTRO staking (CW20) | `astroport-staking` 1.0.0 | [terra1nyu6sk9rvtvsltm7tjjrp6rlavnm3e4sq03kltde6kesam260f8szar8ze](https://terrasco.pe/mainnet/address/terra1nyu6sk9rvtvsltm7tjjrp6rlavnm3e4sq03kltde6kesam260f8szar8ze) | Legacy |
+| Terra | xASTRO CW20 | `astroport-xastro-token` 1.0.0 | [terra1x62mjnme4y0rdnag3r8rfgjuutsqlkkyuh4ndgex0wl3wue25uksau39q8](https://terrasco.pe/mainnet/address/terra1x62mjnme4y0rdnag3r8rfgjuutsqlkkyuh4ndgex0wl3wue25uksau39q8) | Legacy |
+| Terra | Generator | `astroport-generator` 2.3.2 | [terra1ksvlfex49desf4c452j6dewdjs6c48nafemetuwjyj6yexd7x3wqvwa7j9](https://terrasco.pe/mainnet/address/terra1ksvlfex49desf4c452j6dewdjs6c48nafemetuwjyj6yexd7x3wqvwa7j9) | Legacy, replaced by Incentives |
+| Terra | Builder unlock | `builder-unlock` 1.2.2-moved-to-neutron | [terra1zdfquayrfx6jzxmxaltnhq8jfhas7xyrg4q9hrtwvcuyjhgd7qdsgmkgrz](https://terrasco.pe/mainnet/address/terra1zdfquayrfx6jzxmxaltnhq8jfhas7xyrg4q9hrtwvcuyjhgd7qdsgmkgrz) | Moved to Neutron |

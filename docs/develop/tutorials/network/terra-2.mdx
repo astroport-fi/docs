@@ -2,97 +2,100 @@
 sidebar_position: 2
 ---
 
-# Terra 2.0
+# Terra
 
-## feather.js
+## Overview
 
-feather.js is a fork of terra.js with interchain capabilities. It can be used to interact with Cosmos blockchains like Terra within JavaScript runtimes, such as Node.js and the browser. To learn more about feather.js and installing the package, look [here](https://docs.terra.money/develop/feather-js/).
+Terra (chain ID `phoenix-1`) is one of the two chains Astroport runs on. The tutorials use [CosmJS](https://github.com/cosmos/cosmjs), which works with Terra once you set the address prefix and HD path below. Terra Classic is not supported.
 
-### Setup
+| Setting | Value |
+| ------- | ----- |
+| Chain ID | `phoenix-1` |
+| Address prefix | `terra` |
+| HD path | `m/44'/330'/0'/0/0` (coin type 330) |
+| Fee denom | `uluna` |
+| RPC | `https://terra-rpc.publicnode.com` |
+| REST (LCD) | `https://terra-rest.publicnode.com` |
+| Explorer | `https://terrasco.pe/mainnet/address/<address>` |
 
-Getting started takes a few steps: 
+The endpoints are public and run by a third party. For production, run your own node or pick a provider from the [Cosmos chain registry](https://github.com/cosmos/chain-registry).
 
-- Importing feather.js and relevant classes  
-- An `LCDClient` to connect to the Terra 2 blockchain
-- A `MnemonicKey` to sign and broadcast transactions 
-- A `wallet` (inputs our `MnemonicKey` into our `LCDClient`)
+## Assets on Terra
 
-```js 
-import { LCDClient, MnemonicKey, MsgExecuteContract, Coins, Fee } from '@terra-money/feather.js';
+| Asset | Denom or address |
+| ----- | ---------------- |
+| LUNA | `uluna` |
+| ASTRO (IBC from Neutron) | `ibc/8D8A7F7253615E5F76CB6252A1E1BD921D5EDB7BBAAF8913FB1C77FF125D9995` |
+| USDC (Noble) | `ibc/2C962DAB9F57FE0921435426AE75196009FAA1981BF86991203C8411F8980FDB` |
+| USDC.inj | `ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B` |
+| yASTRO (CW20) | `terra1fe8uj96z7f4jfsnkrdxhchxdhdtx8alr9zjqze76hm2ga6tpxjjq5rdjw7` |
 
-const lcd = new LCDClient({
-  // key must be the chainID
-  'pisco-1': {
-    lcd: 'https://pisco-lcd.terra.dev', // testnet lcd
-    chainID: 'pisco-1', // testnet chain-id
-    gasAdjustment: 1.75,
-    gasPrices: { uluna: 0.015 },
-    prefix: 'terra', // bech32 prefix
-  },
-});
+ASTRO on Terra is the IBC denom above. The old CW20 ASTRO (`terra1nsuqsk6kh58ulczatwev87ttq2z6r3pusulg9r24mfj2fvtzd4uq3exn26`) is legacy; the ASTRO converter pool `terra1ala9d5sddzxf8jdgyd9m6s0jkwy5a724938zgwe9zmh5rwtyzzfql59par` converts it to IBC ASTRO. yASTRO is Terra's ASTRO staking token: see [yASTRO](/docs/develop/smart-contracts/tokenomics/yastro).
 
-const mk = new MnemonicKey({
-  mnemonic: '',
-});
-
-const wallet = lcd.wallet(mk);
-```
-
-### Executing Messages
-
-To execute a contract message, we create a new `MsgExecuteContract` object variable containing our `wallet`, the contract we are sending our message to, our message itself, and any `Coins` to send along with our transaction. 
-
-This object then gets passed into a `tx` variable which creates and signs the transaction. A custom `fee` variable can also be passed in. 
-
-Finally, our transaction gets broadcasted and the result is printed in the console. 
+## Connecting with CosmJS
 
 ```js
-const contract_address = '<INSERT_CONTRACT_ADDRESS>'; // A terra address on pisco-1
+import { CosmWasmClient, SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
+import { stringToPath } from "@cosmjs/crypto";
+import { GasPrice } from "@cosmjs/stargate";
 
-const execute = new MsgExecuteContract(
-  wallet.key.accAddress('terra'),
-  contract_address,
+const rpc = "https://terra-rpc.publicnode.com";
+
+// Queries
+const client = await CosmWasmClient.connect(rpc);
+
+// Transactions
+const wallet = await DirectSecp256k1HdWallet.fromMnemonic(process.env.MNEMONIC, {
+  prefix: "terra",
+  hdPaths: [stringToPath("m/44'/330'/0'/0/0")], // Terra's coin type
+});
+const signingClient = await SigningCosmWasmClient.connectWithSigner(rpc, wallet, {
+  gasPrice: GasPrice.fromString("0.015uluna"),
+});
+```
+
+Without the `hdPaths` option, CosmJS derives the Cosmos Hub address (coin type 118) from your mnemonic, which is not the address Terra wallets show.
+
+## Querying a Contract
+
+```js
+const router = "terra1txm8xcy8mete9e5zh5ktqr4jm4cq4ja8djttg3zkqll64x4ksq7qknaesf"; // Router 2.0.0
+
+const config = await client.queryContractSmart(router, { config: {} });
+console.log(config); // { astroport_factory: "terra14x9fr055x5hvr48hzy2t4q7kvjvfttsvxusa4xsdcy702mnzsvuqprer8r" }
+```
+
+## Executing a Message
+
+This swaps 1 LUNA for USDC in the LUNA/USDC pool. See [Swapping](../trading/swapping) for how to set `belief_price` and `max_spread`.
+
+```js
+const [{ address: sender }] = await wallet.getAccounts();
+const pool = "terra1v3lqxl0eyte9x3nhdgcj8hwvjq76aupnnzz0yll8mxs5cckc29pqvg2scu"; // LUNA/USDC
+
+const result = await signingClient.execute(
+  sender,
+  pool,
   {
-    "swap": {
-      "offer_asset": {
-        "info": {
-          "native_token": {
-            "denom": "uluna"
-          }
-        },
-        "amount": "100000"
-      }
-    }
-  }, // Example execute message  
-  new Coins({ uluna: '100000' }) // Coins to send with transaction
+    swap: {
+      offer_asset: { info: { native_token: { denom: "uluna" } }, amount: "1000000" },
+      belief_price: beliefPrice, // offer / return from a simulation, as a decimal string
+      max_spread: "0.01",
+    },
+  },
+  "auto",
+  "",
+  [{ denom: "uluna", amount: "1000000" }] // the offer asset
 );
 
-// Broadcast transaction
-const fee = new Fee(500000, { uluna: 200000 }); // 
-
-const tx = await wallet.createAndSignTx({
-  msgs: [execute],
-  fee,
-  chainID: 'pisco-1',
-});
-
-const result = await lcd.tx.broadcast(tx, 'pisco-1');
-
-console.log(result);
+console.log(result.transactionHash);
 ```
 
-### Querying Data
+Terra's own SDK, [feather.js](https://github.com/terra-money/feather.js), also works if you already use it; the contract messages are the same.
 
-To query data from a contract, you just need to make an async call to the `LCDClient` containing the contract to query and the query itself. Note that you don't need a `MnemonicKey` or `wallet` to execute queries. 
+## Links
 
-
-```js
-const contract_address = '<INSERT_CONTRACT_ADDRESS>'; // A terra address on pisco-1
-
-const query = await lcd.wasm.contractQuery(
-  contract_address, 
-  {
-    "config": {} // Example query
-  }
-).then(result => { console.log(result) }); // Print result 
-```
+- [Cosmos Chains](cosmos-chains)
+- [Neutron](neutron)
+- [Contract Addresses](/docs/develop/smart-contracts/contract-addresses)

@@ -66,13 +66,12 @@ const learnContent = [
     ],
   },
   {
-    title: "Astral Assembly",
-    description:
-      "Enter the doors of Astroports governing body, the Astral Assembly",
+    title: "yASTRO",
+    description: "Stake ASTRO and earn a share of Astroport's fees",
     image: AstralAssemblyImg,
     listItems: [
       {
-        href: "../../../../docs/learn/astral-assembly",
+        href: "../../../../docs/learn/yastro",
         label: "Overview",
       },
     ],
@@ -123,49 +122,42 @@ const learnContent = [
   },
 ];
 
-const governContent = [
+const ltsContent = [
   {
-    title: "Astroport Improvement Proposal Framework",
-    description: "The framework that empowers Assembly participants",
+    title: "Long-Term Support",
+    description: "How Astroport runs today and where fees go",
     image: AIPFImg,
     listItems: [
       {
-        label: "AIP Lifecycle",
-        href: "../../../../docs/govern/astroport-improvement-proposal-framework",
+        label: "Overview",
+        href: "../../../../docs/learn/long-term-support",
       },
-      // , { label: "AIP Templates" }
     ],
   },
   {
-    title: "Astroport Incentive Framework",
-    description: "The blueprint for ASTRO emissions",
+    title: "yASTRO",
+    description: "Stake ASTRO on Terra and earn USDC.inj from fees",
     image: AIFImg,
     listItems: [
       {
-        label: "Overview",
-        href: "../../../../docs/govern/astroport-incentive-framework",
+        label: "Staking guide",
+        href: "../../../../docs/learn/yastro",
       },
-      // { label: "AIF Template" },
+      {
+        label: "Contract reference",
+        href: "../../../../docs/develop/smart-contracts/tokenomics/yastro",
+      },
     ],
   },
   {
-    title: "Proposal Messages",
-    description:
-      "Insights and best practices for on-chain governance proposals",
+    title: "Contract Addresses",
+    description: "Every live Astroport contract on Terra and Neutron",
     image: ProposalMessagesImg,
     listItems: [
       {
-        href: "../../../../docs/govern/proposal-messages/astro-allocation-points",
-        label: "ASTRO Allocation Points",
+        label: "Addresses",
+        href: "../../../../docs/develop/smart-contracts/contract-addresses",
       },
-      {
-        href: "../../../../docs/govern/proposal-messages/deregistering-a-pool",
-        label: "Deregistering a Pool",
-      },
-      // {
-      //   href: "../../../../docs/govern/proposal-messages/dual-rewards",
-      //   label: "Dual Rewards",
-      // },
     ],
   },
 ];
@@ -219,11 +211,6 @@ const developContent = [
         href: "../../../../docs/develop/tutorials/farming/farming-intro",
         label: "Farming",
       },
-
-      {
-        href: "../../../../docs/develop/tutorials/governance/governance-intro",
-        label: "Governance",
-      },
     ],
   },
 ];
@@ -266,10 +253,10 @@ export default function ContentBox(props) {
         ))}
       </div>
     );
-  } else if (props.title == "Govern") {
+  } else if (props.title == "LTS") {
     return (
       <div className="flex flex-wrap justify-center gap-4">
-        {governContent.map((entry) => (
+        {ltsContent.map((entry) => (
           <Card key={entry.title}>
             {/* <a className={styles.links} href="../../docs/develop/backend"> */}
             <div className={styles.box}>

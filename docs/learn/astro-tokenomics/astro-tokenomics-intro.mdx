@@ -2,10 +2,23 @@ import AstroTokenomicsUrl from '@site/static/img/tokenomics/astro-tokenomics-2.p
 
 # Astro Tokenomics
 
-The ASTRO token on Terra 2 and ASTROC on Terra Classic lie at the heart of the Astroport ecosystem, helping coordinate and align incentives of all stakeholders involved. Ultimately, Astroport is a digital commons that is owned, controlled, operated, maintained, and updated by the community of its users and builders.
+## Overview
 
-As a token, ASTRO and ASTROC are designed to be the tools for distributing the value of and power over the Astroport smart contract system on their respective blockchains (Terra 2 and Terra Classic).
+ASTRO is Astroport's token. It is native to Neutron and is used on Terra through IBC.
 
-The goal is to make the user a space station ‘owner’ who maintains and improves Astroport.
+| Chain | ASTRO denom |
+|---|---|
+| Neutron | `factory/neutron1ffus553eet978k024lmssw0czsxwr97mggyv85lpcsdkft8v9ufsz3sa07/astro` |
+| Terra | `ibc/8D8A7F7253615E5F76CB6252A1E1BD921D5EDB7BBAAF8913FB1C77FF125D9995` |
+
+The old ASTRO CW20 on Terra (`terra1nsuqsk6kh58ulczatwev87ttq2z6r3pusulg9r24mfj2fvtzd4uq3exn26`) is legacy. It converts one way into IBC ASTRO through the ASTRO converter pool.
+
+With Astroport in [long-term support](../long-term-support), ASTRO works like this:
+
+- **Supply only goes down.** The supply started at 1,000,000,000 ASTRO and was 696,235,077.66 ASTRO on 2026-11-04. New ASTRO can't be minted, and protocol fees keep buying and burning ASTRO. See [Supply and Allocation](./allocation).
+- **No emissions.** ASTRO is no longer emitted to pools.
+- **No governance.** ASTRO, xASTRO and vxASTRO no longer vote on anything.
+- **Fee share through yASTRO.** On Terra, ASTRO can be staked as [yASTRO](../yastro) to earn a quarter of Terra's protocol fees in USDC.inj. See [Utility](./utility).
+- **Fees burn ASTRO.** All of Neutron's protocol fees and a quarter of Terra's buy ASTRO, which is burned. See [Fees](./fees).
 
 <img src={AstroTokenomicsUrl} style={{ }} />

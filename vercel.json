@@ -32,12 +32,12 @@
     },
     {
       "source": "/astroport/astroport/astro-generators",
-      "destination": "/docs/learn/astro-generators",
+      "destination": "/docs/learn/astro-incentives",
       "statusCode": 301
     },
     {
       "source": "/astroport/astroport/astral-assembly",
-      "destination": "/docs/learn/astral-assembly",
+      "destination": "/docs/learn/long-term-support",
       "statusCode": 301
     },
     {
@@ -87,27 +87,27 @@
     },
     {
       "source": "/astroport/workstation/pools/using-generators",
-      "destination": "/docs/learn/astro-generators",
+      "destination": "/docs/learn/astro-incentives",
       "statusCode": 301
     },
     {
       "source": "/astroport/workstation/governance",
-      "destination": "/docs/learn/workstation/astral-assembly/astral-assembly-intro",
+      "destination": "/docs/learn/yastro",
       "statusCode": 301
     },
     {
       "source": "/astroport/workstation/governance/staking",
-      "destination": "/docs/learn/workstation/astral-assembly/staking-unstaking",
+      "destination": "/docs/learn/yastro",
       "statusCode": 301
     },
     {
       "source": "/astroport/workstation/governance/adding-proposals",
-      "destination": "/docs/learn/workstation/astral-assembly/submitting-a-proposal",
+      "destination": "/docs/learn/yastro",
       "statusCode": 301
     },
     {
       "source": "/astroport/workstation/governance/voting",
-      "destination": "/docs/learn/workstation/astral-assembly/voting",
+      "destination": "/docs/learn/yastro",
       "statusCode": 301
     },
     {
@@ -157,27 +157,27 @@
     },
     {
       "source": "/astroport/governance/astroport-improvement-proposal-framework",
-      "destination": "/docs/govern/astroport-improvement-proposal-framework",
+      "destination": "/docs/learn/long-term-support",
       "statusCode": 301
     },
     {
       "source": "/astroport/governance/proposal-messages",
-      "destination": "/docs/govern/proposal-messages/proposal-messages-intro",
+      "destination": "/docs/learn/long-term-support",
       "statusCode": 301
     },
     {
       "source": "/astroport/governance/proposal-messages/fine-tuning-allocation-points",
-      "destination": "/docs/govern/proposal-messages/astro-allocation-points",
+      "destination": "/docs/learn/long-term-support",
       "statusCode": 301
     },
     {
       "source": "/astroport/governance/proposal-messages/integrating-proxy-contracts",
-      "destination": "/docs/govern/proposal-messages/proxy-contracts",
+      "destination": "/docs/learn/long-term-support",
       "statusCode": 301
     },
     {
       "source": "/astroport/governance/proposal-messages/integrating-dual-rewards",
-      "destination": "/docs/govern/proposal-messages/dual-rewards",
+      "destination": "/docs/learn/long-term-support",
       "statusCode": 301
     },
     {
@@ -250,7 +250,6 @@
       "destination": "/docs/develop/smart-contracts/token",
       "statusCode": 301
     },
-
     {
       "source": "/astroport/smart-contracts/tokenomics",
       "destination": "/docs/develop/smart-contracts/tokenomics/tokenomics-intro",
@@ -258,7 +257,7 @@
     },
     {
       "source": "/astroport/smart-contracts/tokenomics/generator",
-      "destination": "/docs/develop/smart-contracts/tokenomics/generator",
+      "destination": "/docs/develop/smart-contracts/tokenomics/incentives",
       "statusCode": 301
     },
     {
@@ -278,22 +277,22 @@
     },
     {
       "source": "/astroport/smart-contracts/tokenomics/xastro-token",
-      "destination": "/docs/develop/smart-contracts/tokenomics/xastro-token",
+      "destination": "/docs/develop/smart-contracts/tokenomics/staking",
       "statusCode": 301
     },
     {
       "source": "/astroport/smart-contracts/tokenomics/dual-reward-proxy",
-      "destination": "/docs/develop/smart-contracts/tokenomics/generator-proxy",
+      "destination": "/docs/develop/smart-contracts/tokenomics/incentives",
       "statusCode": 301
     },
     {
       "source": "/astroport/smart-contracts/tokenomics/dual-reward-proxy/integrating-dual-rewards",
-      "destination": "/docs/develop/smart-contracts/tokenomics/generator-proxy",
+      "destination": "/docs/develop/smart-contracts/tokenomics/incentives",
       "statusCode": 301
     },
     {
       "source": "/astroport/smart-contracts/astral-assembly",
-      "destination": "/docs/develop/smart-contracts/astral-assembly",
+      "destination": "/docs/develop/smart-contracts/access-controls-and-permissions",
       "statusCode": 301
     },
     {
@@ -303,7 +302,7 @@
     },
     {
       "source": "/astroport/smart-contracts/access-controls-and-permissions",
-      "destination": "/docs/develop/smart-contracts/smart-contracts-intro#access-controls-and-permissions",
+      "destination": "/docs/develop/smart-contracts/access-controls-and-permissions",
       "statusCode": 301
     },
     {
@@ -343,7 +342,7 @@
     },
     {
       "source": "/astroport/extras/astroport-litepaper",
-      "destination": "/docs/overview/useful-links#whitepaper",
+      "destination": "/docs/overview/useful-links",
       "statusCode": 301
     },
     {
@@ -359,6 +358,101 @@
     {
       "source": "/docs/develop/smart-contracts/astroport-contract-addresses",
       "destination": "/docs/develop/smart-contracts/contract-addresses",
+      "statusCode": 301
+    },
+    {
+      "source": "/docs/govern/:path*",
+      "destination": "/docs/learn/long-term-support",
+      "statusCode": 301
+    },
+    {
+      "source": "/docs/govern",
+      "destination": "/docs/learn/long-term-support",
+      "statusCode": 301
+    },
+    {
+      "source": "/docs/learn/astral-assembly",
+      "destination": "/docs/learn/long-term-support",
+      "statusCode": 301
+    },
+    {
+      "source": "/docs/learn/astro-bribes",
+      "destination": "/docs/learn/astro-incentives",
+      "statusCode": 301
+    },
+    {
+      "source": "/docs/learn/emissions-voting/:path*",
+      "destination": "/docs/learn/long-term-support",
+      "statusCode": 301
+    },
+    {
+      "source": "/docs/learn/workstation/astral-assembly/:path*",
+      "destination": "/docs/learn/yastro",
+      "statusCode": 301
+    },
+    {
+      "source": "/docs/learn/workstation/bribes/:path*",
+      "destination": "/docs/learn/workstation/incentives/incentives-intro",
+      "statusCode": 301
+    },
+    {
+      "source": "/docs/learn/workstation/sei-starter-pack/:path*",
+      "destination": "/docs/learn/long-term-support",
+      "statusCode": 301
+    },
+    {
+      "source": "/docs/learn/workstation/starter-pack/bridging-tokens/:slug(astroport-bridge|injective-bridge|wormhole)",
+      "destination": "/docs/learn/workstation/starter-pack/bridging-tokens/bridging-tokens-intro",
+      "statusCode": 301
+    },
+    {
+      "source": "/docs/learn/workstation/neutron-starter-pack/wsteth-weth-pool-tutorial/:slug(bridge-wsteth-to-neutron|provide-liquidity-to-wsteth-weth-pool-on-astroport|swap-wsteth-for-weth-on-astroport|wrap-eth-on-lido)",
+      "destination": "/docs/learn/workstation/neutron-starter-pack/wsteth-weth-pool-tutorial/wsteth-weth-pool-tutorial-intro",
+      "statusCode": 301
+    },
+    {
+      "source": "/docs/develop/smart-contracts/astral-assembly",
+      "destination": "/docs/develop/smart-contracts/access-controls-and-permissions",
+      "statusCode": 301
+    },
+    {
+      "source": "/docs/develop/smart-contracts/periphery/native-coin-wrapper",
+      "destination": "/docs/develop/smart-contracts/periphery/periphery-contracts-intro",
+      "statusCode": 301
+    },
+    {
+      "source": "/docs/develop/smart-contracts/tokenomics/generator",
+      "destination": "/docs/develop/smart-contracts/tokenomics/incentives",
+      "statusCode": 301
+    },
+    {
+      "source": "/docs/develop/smart-contracts/tokenomics/generator-proxy",
+      "destination": "/docs/develop/smart-contracts/tokenomics/incentives",
+      "statusCode": 301
+    },
+    {
+      "source": "/docs/develop/smart-contracts/tokenomics/xastro-token",
+      "destination": "/docs/develop/smart-contracts/tokenomics/staking",
+      "statusCode": 301
+    },
+    {
+      "source": "/docs/develop/tutorials/governance/:path*",
+      "destination": "/docs/learn/yastro",
+      "statusCode": 301
+    },
+    {
+      "source": "/docs/develop/tutorials/astro-emissions/:path*",
+      "destination": "/docs/learn/astro-incentives",
+      "statusCode": 301
+    },
+    {
+      "source": "/docs/develop/tutorials/network/:slug(injective|terra-classic)",
+      "destination": "/docs/develop/tutorials/network/network-intro",
+      "statusCode": 301
+    },
+    {
+      "source": "/docs/overview/security/bug-bounty",
+      "destination": "/docs/overview/security/security-intro",
       "statusCode": 301
     }
   ]

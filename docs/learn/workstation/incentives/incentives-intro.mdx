@@ -7,13 +7,14 @@ import IncentivesUrl4 from '@site/static/img/web-app-tutorials/incentives/step-4
 import IncentivesUrl5 from '@site/static/img/web-app-tutorials/incentives/step-5.png';
 import IncentivesUrl5b from '@site/static/img/web-app-tutorials/incentives/step-5b.png';
 
+Astroport's incentives are permissionless: anyone can incentivize any pool on Terra or Neutron, with up to five different reward tokens per pool. There are no ASTRO emissions anymore, so external incentives (and, on Terra, [yASTRO rewards for yASTRO pools](../../yastro#yastro-in-pools)) are the only incentives pools receive.
 
-Astroport's new permissionless incentive system offers a streamlined and democratized approach to deploying incentives for pools. Now, anyone can incentivize any pool with up to five different tokens. Here's how it works:
+Here's how it works:
 
-1. **Select a Pool:** Users begin by choosing which liquidity pool they wish to incentivize.
-2. **Define Incentives:** They then select the token(s) with which they want to incentivize the pool.
-3. **Set Duration:** Users set the duration of the incentive, ranging from a minimum of 1 week to a maximum of 25 weeks. The total amount of the incentive will be distributed either linearly or decreasingly over this period.
-4. **Sign and Confirm:** The final step involves signing and confirming the transaction, with a 1500 ASTRO fee to activate the incentives.
+1. **Select a Pool:** Choose the liquidity pool you want to incentivize.
+2. **Define Incentives:** Select the token(s) you want to incentivize the pool with.
+3. **Set Duration:** Set the duration of the incentive, from 1 week to 25 weeks. Schedules run in Astroport weeks (Monday 00:00 UTC to Sunday 23:59 UTC): a new schedule starts right away and lasts until the next Monday plus the number of weeks you choose.
+4. **Sign and Confirm:** Sign and confirm the transaction. Adding a reward token that the pool doesn't already have costs a 1,500 ASTRO incentivization fee, which goes to the Maker. Topping up a token the pool already has, or adding ASTRO as a reward, doesn't.
 
 Continue below for an in-depth guide on deploying incentives.
 
@@ -24,6 +25,8 @@ The **Incentivize Pool** button can be found on the top right of the **Pools** p
 <img src={IncentivesUrl1} style={{ paddingBottom: 10 }} />
 
 ### Step 2: Select a pool to incentivize
+
+Withdraw-only pools (the six Neutron pools drained in September 2026) can't usefully be incentivized: they don't accept deposits.
 
 <img src={IncentivesUrl2} style={{ paddingBottom: 10 }} />
 
@@ -41,9 +44,9 @@ Next, we define the amount of incentives that are being deposited.
 
 ### Step 5: Define Duration 
 
-Lastly, we define the incentives schedule, or how many weeks your incentives will last. Your total incentive amount will be distributed linearly or decreasingly. Incentives require a minimum of 1 week and a maximum of 25 weeks. 
+Lastly, we define the incentives schedule, or how many weeks your incentives will last. Incentives require a minimum of 1 week and a maximum of 25 weeks. 
 
-Note that rewards per second must be at least 1 unit. 
+Note that rewards per second must be at least 1 unit of the reward token. 
 
 <img src={IncentivesUrl5} style={{ paddingBottom: 10 }} />
 
@@ -53,4 +56,4 @@ You can expand the duration tab to see incentives distributed per week for your 
 
 ### Step 6: Sign and Confirm transaction
 
-Once complete, your incentives schedule should begin!
+Once complete, your incentives schedule should begin! Rewards are paid to LPs who stake their LP tokens in the Incentives contract, pro rata to their stake.

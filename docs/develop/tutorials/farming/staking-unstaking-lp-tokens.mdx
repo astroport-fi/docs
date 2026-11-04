@@ -2,129 +2,146 @@
 sidebar_position: 3
 ---
 
+import Admonition from '@theme/Admonition'
+
 # Staking/Unstaking LP Tokens
 
 ## Overview
 
-A user can stake their LP tokens into the Generator contract to receive ASTRO or 3rd party emissions by calling [`deposit`](../../smart-contracts/tokenomics/generator#deposit). The `deposit` operation should be executed from inside the contract of the LP token you want to stake.
+LP tokens staked in the [Incentives](/docs/develop/smart-contracts/tokenomics/incentives) contract earn the incentive rewards scheduled for their pool. Unstaked LP tokens earn swap fees only (fees accrue inside the pool for every LP token, staked or not).
 
-Users can also unstake their LP tokens by calling [`withdraw`](../../smart-contracts/tokenomics/generator#withdraw) endpoint in the Generator contract. `withdraw` also claims any outstanding token emissions.
+| Chain | Incentives |
+| ----- | ---------- |
+| Terra | `terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x` (1.5.0) |
+| Neutron | `neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch` (1.4.0) |
+
+<Admonition type="info" title="No ASTRO emissions">
+
+Astroport no longer emits ASTRO to pools: Incentives' ASTRO rate is zero. Rewards for staked LP tokens come only from external incentive schedules that anyone can add to a pool (see [Claiming Rewards](claiming-rewards#where-rewards-come-from)). Staking a pool's LP tokens earns nothing extra unless that pool has an active schedule. The legacy Generator contracts still exist on both chains, but emissions there have ended; use Incentives.
+
+</Admonition>
+
+Any LP token of a pool registered in the factory can be staked. Staking, unstaking and claiming all settle your pending rewards first: every `deposit` and `withdraw` also pays out what you have earned so far.
 
 ## Staking LP Tokens
 
-<CH.Section>
-    <CH.Scrollycoding>
+How you stake depends on the LP token type, which the pool's `pair` query returns as `liquidity_token`.
 
-        ### `send`
+### Native LP Tokens
 
-        To stake our LP tokens in the Generator contract, you need to execute a contract message pointing to the `send` enpoint of the contract associated with the LP token you want to stake.
+Call `deposit` on Incentives and attach the LP tokens (exactly one coin) as funds:
 
-        The `send` operation takes in a: 
+```json
+{
+  "deposit": {}
+}
+```
 
-        - `contract` - Address LP tokens are being sent to (Generator contract) 
-        - `amount` - Amount to send/stake 
-        - `msg` - Binary encoded message containing our contract call.
+```js
+const incentives = "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch";
+const lpDenom = "factory/neutron1...pool/astroport/share";
 
-        ```json
-        {
-          "send": {
-            "contract": generatorAddress,
-            "amount": "10000000",
-            "msg": toBase64(
-              {
-                  "deposit": {}
-              }
-            )
-          }
-        }
-        ```
+await signingClient.execute(
+  sender,
+  incentives,
+  { deposit: {} },
+  "auto",
+  "",
+  [{ denom: lpDenom, amount: "1000000" }]
+);
+```
 
-        ---
+`deposit` takes an optional `recipient` to stake on behalf of another address: `{"deposit": {"recipient": "neutron1..."}}`.
 
-        ### `deposit`
+### CW20 LP Tokens
 
-        Our encoded message performs a contract call to the [`deposit`](../../smart-contracts/tokenomics/generator#deposit) endpoint in the Generator contract. 
+Call `send` on the LP token contract with Incentives as `contract`. The `msg` is the base64 encoding of `{"deposit":{}}`.
 
-        No other parameters are required.
+```json
+{
+  "send": {
+    "contract": "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
+    "amount": "1000000",
+    "msg": "eyJkZXBvc2l0Ijp7fX0="
+  }
+}
+```
 
+```js
+import { toBinary } from "@cosmjs/cosmwasm-stargate";
 
-        ```json focus=6:8
-        ```
+const incentives = "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x";
+const lpToken = "terra1s275y73lfupag0g03nglxaedfnsw5z4m5zc9wk66guy503zuw5ss889tlx"; // LUNA/USDC LP
 
-        ---
+await signingClient.execute(
+  sender,
+  lpToken, // the LP token contract
+  {
+    send: {
+      contract: incentives,
+      amount: "1000000",
+      msg: toBinary({ deposit: {} }),
+    },
+  },
+  "auto"
+);
+```
 
-        ### Encoding our `Msg`
+### Staking While Providing Liquidity
 
-
-        To encode our message, there are two common options:
-
-        - An [online base64 encoder](https://www.base64encode.org/)
-        - A custom function
-
-        The code in this section uses a custom function (toBase64) to display our binary message - this function needs to be defined elsewhere to be used. The actual string representation of our message would be an encoded binary.
-
-        ```json focus=5:9
-        ```
-        --- 
-
-        #### `toBase64`
-
-        The code in this section is an example of a `deposit` message using [feather.js](../network/terra-2#featherjs) to define our custom function and encode our message.
-
-        ```js
-        const generatorAddress = 'terra1gc4d4v82vjgkz0ag28lrmlxx3tf6sq69tmaujjpe7jwmnqakkx0qm28j2l';
-
-        const stakeLPTokens = new MsgExecuteContract(
-          wallet.key.accAddress('terra'),
-          astrolunaLPAddress,
-          {
-            "send": {
-              "contract": generatorAddress,
-              "amount": "10000000",
-              "msg": toBase64(
-                {
-                  "deposit": {}
-                }
-              )
-            }
-          }
-        )
-
-        const fee = new Fee(2000000, { uluna: 200000 });
-
-        const tx = await wallet.createAndSignTx({
-          msgs: [stakeLPTokens],
-          fee,
-          chainID: 'pisco-1',
-        });
-
-        const result = await lcd.tx.broadcast(tx, 'pisco-1');
-
-        console.log(result);
-        ```
-
-    </CH.Scrollycoding>
-</CH.Section> 
+`provide_liquidity` with `"auto_stake": true` mints the LP tokens and stakes them in Incentives in the same transaction. See [Providing/Withdrawing Liquidity](providing-withdrawing-liquidity).
 
 ## Unstaking LP Tokens
 
-<CH.Section>
-    <CH.Scrollycoding>
+Call `withdraw` on Incentives with the LP token (denom or CW20 address) and the amount. The LP tokens and any pending rewards are sent to you.
 
-        ### `withdraw`
+```json
+{
+  "withdraw": {
+    "lp_token": "terra1s275y73lfupag0g03nglxaedfnsw5z4m5zc9wk66guy503zuw5ss889tlx",
+    "amount": "1000000"
+  }
+}
+```
 
-        To unstake LP tokens from the Generator contract, you need to execute a contract message pointing to the [`withdraw`](../../smart-contracts/tokenomics/generator#withdraw) endpoing in the Generator contract. 
+```js
+await signingClient.execute(
+  sender,
+  incentives,
+  { withdraw: { lp_token: lpToken, amount: "1000000" } },
+  "auto"
+);
+```
 
-        `withdraw` takes in the address `lp_token` you want to withdraw and an `amount` to withdraw. 
+The amount can't be more than you have staked. To leave a [withdraw-only (exit-only) pool](providing-withdrawing-liquidity#withdraw-only-exit-only-pools), unstake its LP tokens here first, then withdraw them from the pool.
 
-        ```json
-        {
-          "withdraw": {
-            "lp_token": astrolunaLPAddress,
-            "amount": "5000000"
-          }
-        }
-        ```
+## Checking Your Position
 
-    </CH.Scrollycoding>
-</CH.Section> 
+The amount you have staked (`deposit` returns a `Uint128`):
+
+```json
+{
+  "deposit": {
+    "lp_token": "terra1s275y73lfupag0g03nglxaedfnsw5z4m5zc9wk66guy503zuw5ss889tlx",
+    "user": "terra1...you"
+  }
+}
+```
+
+Your pending rewards for that LP token, as a list of assets (the query fails if you have no position in that pool):
+
+```json
+{
+  "pending_rewards": {
+    "lp_token": "terra1s275y73lfupag0g03nglxaedfnsw5z4m5zc9wk66guy503zuw5ss889tlx",
+    "user": "terra1...you"
+  }
+}
+```
+
+## Links
+
+- [Claiming Rewards](claiming-rewards)
+- [Staking/Unstaking LP Tokens with CosmJS](../staking-unstaking-lp-tokens/staking-unstaking-lp-tokens-intro): a complete script
+- [Incentives contract](/docs/develop/smart-contracts/tokenomics/incentives)
+- [Contract Addresses](/docs/develop/smart-contracts/contract-addresses)

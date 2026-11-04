@@ -2,76 +2,17 @@
 sidebar_position: 1
 ---
 
-import Gas1Url from '@site/static/img/web-app-tutorials/wsteth-eth-tutorial/tfm/step-1.png';
-import Gas2Url from '@site/static/img/web-app-tutorials/wsteth-eth-tutorial/tfm/step-2.png';
-import Gas2BUrl from '@site/static/img/web-app-tutorials/wsteth-eth-tutorial/tfm/step-3.png';
-import Gas3Url from '@site/static/img/web-app-tutorials/wsteth-eth-tutorial/tfm/step-4.png';
-import Gas3BUrl from '@site/static/img/web-app-tutorials/wsteth-eth-tutorial/tfm/step-5.png';
-import Gas4Url from '@site/static/img/web-app-tutorials/wsteth-eth-tutorial/tfm/step-6.png';
-import Gas5Url from '@site/static/img/web-app-tutorials/wsteth-eth-tutorial/tfm/step-7.png';
-import Gas6Url from '@site/static/img/web-app-tutorials/wsteth-eth-tutorial/tfm/step-8.png';
-import Gas6BUrl from '@site/static/img/web-app-tutorials/wsteth-eth-tutorial/tfm/step-9.png';
-import Gas6CUrl from '@site/static/img/web-app-tutorials/wsteth-eth-tutorial/tfm/step-10.png';
-
-
 # Gas on Neutron
 
-Neutron  supports both ATOM and NTRN as gas tokens for executing transactions. 
+Every transaction on Neutron needs a small amount of gas. NTRN, Neutron's native token, is the main gas token.
 
-The recommended method is to obtain NTRN on Binance and KuCoin and withdraw directly to your Neutron address. If you can't get NTRN, ATOM is widely availiable across centralized and decentralized exchanges. Once you have ATOM in your Cosmos wallet, you can bridge ATOM using the IBC network to Neutron. 
+The simplest way to get gas is to buy NTRN on a centralized exchange that lists it and withdraw it directly to your Neutron address. Check the exchange's withdrawal fee and minimum before you withdraw.
 
-**This tutorial assumes you were able to obtain ATOM from an exchange (Coinbase, Binance, KuCoin, Kraken, etc.) and were able to send it to your Cosmos wallet.** Lets continue below.
+If you already hold tokens on another chain, you can bring them to Neutron instead:
 
-### Step 1: Head over to [tfm.com/bridge](https://tfm.com/bridge)
+- **From a Cosmos chain:** send tokens to Neutron with an IBC transfer, using your wallet or a cross-chain interface such as [IBC.fun](https://ibc.fun).
+- **From an EVM chain:** use a cross-chain router such as [Squid Router](https://www.squidrouter.com/), which can also deliver a small amount of gas on the destination chain.
 
-Once we have ATOM in our Cosmos wallet, we can transfer our ATOM from the Cosmos Hub to Neutron using IBC. To do this, we can use the [tfm.com/bridge](https://tfm.com/bridge) UI. Once you're in the page, select **"Connect Wallet"** to continue. 
+Once you have NTRN in your Neutron wallet, you can swap it on Astroport at [app.astroport.fi](https://app.astroport.fi). Keep some NTRN for future transactions. See [Buying ASTRO](../starter-pack/buying-astro) for a full example.
 
-<img src={Gas1Url} style={{ paddingBottom: 10 }} />
-
-### Step 2: Connect Cosmos Hub Wallet
-
-From the dropdown menus, select the Cosmos Hub network and a supported wallet. 
-
-<img src={Gas2Url} style={{ paddingBottom: 10 }} />
-
-Once connected, your wallet for Cosmos Hub will appear in the wallet drop down menu.
-
-<img src={Gas2BUrl} style={{ paddingBottom: 10 }} />
-
-### Step 3: Connect Neutron wallet 
-
-Now that we are connected to the Cosmos Hub network, we will want to do the same for our Neutron wallet. Select the add wallet icon and add the Neutron network and a wallet. 
-
-<img src={Gas3Url} style={{ paddingBottom: 10 }} />
-
-Now you should have two connected wallets with TFM. 
-
-<img src={Gas3BUrl} style={{ paddingBottom: 10 }} />
-
-### Step 4: Select Transfer Route
-
-Now we are ready to begin our transfer. Select the transfer route (Cosmos Hub to Neutron). 
-
-<img src={Gas4Url} style={{ paddingBottom: 10 }} />
-
-### Step 5: Select Token and Amount 
-
-Next, select the token (ATOM) and an amount to send. Select "Transfer" to continue.
-
-<img src={Gas5Url} style={{ paddingBottom: 10 }} />
-
-### Step 6: Confirm and Sign Transaction 
-
-Lastly, confirm your transaction. 
-
-<img src={Gas6Url} style={{ paddingBottom: 10 }} />
-
-And sign using your wallet. 
-
-<img src={Gas6BUrl} style={{ paddingBottom: 10 }} />
-
-You will be prompted once the transaction is complete with a link to the transaction hash where you can get more details. 
-
-<img src={Gas6CUrl} style={{ paddingBottom: 10 }} />
-
-
+No endorsement or guarantee is made about third-party exchanges, bridges or routers. Do your own research before using them.

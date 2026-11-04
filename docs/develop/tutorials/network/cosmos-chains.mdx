@@ -4,107 +4,123 @@ sidebar_position: 1
 
 # Cosmos Chains
 
-## Unix Shell
+## Overview
 
-<CH.Scrollycoding>
+Astroport runs on two Cosmos chains, Terra and Neutron. Both are CosmWasm chains, so the same tools work on each: a REST (LCD) endpoint for queries from a shell, and [CosmJS](https://github.com/cosmos/cosmjs) for queries and transactions from JavaScript.
 
-### Getting Started
+| | Terra | Neutron |
+| --- | ----- | ------- |
+| Chain ID | `phoenix-1` | `neutron-1` |
+| Address prefix | `terra` | `neutron` |
+| Fee denom | `uluna` (6 decimals) | `untrn` (6 decimals) |
+| HD path (coin type) | `m/44'/330'/0'/0/0` (330) | `m/44'/118'/0'/0/0` (118) |
+| RPC | `https://terra-rpc.publicnode.com` | `https://neutron-rpc.polkachu.com` |
+| REST (LCD) | `https://terra-rest.publicnode.com` | `https://neutron-api.polkachu.com` |
+| Explorer | [terrasco.pe](https://terrasco.pe/mainnet) | [Celatone](https://neutron.celat.one/neutron-1), [Mintscan](https://www.mintscan.io/neutron) |
 
-A Unix shell can be used to directly query smart contracts deployed on any Cosmos chain. The `GET` request takes in: 
+These are public endpoints run by third parties. They are fine for testing; for production, run your own node or pick a provider from the [Cosmos chain registry](https://github.com/cosmos/chain-registry). Astroport's contract addresses are on the [Contract Addresses](/docs/develop/smart-contracts/contract-addresses) page. Testnet deployments are not maintained.
 
-- `LCD_ENDPOINT` - LCD endpoint for the chain we are querying
-- `CONTRACT_ADDRESS` - Smart contract address that we are querying
-- `HEX_ENCODED_JSON` - Hex encoded json string for our query
+## Querying with a Shell
 
-```bash
-curl --location --request GET "{LCD_ENDPOINT}/wasm/contract/{CONTRACT_ADDRESS}/smart/{HEX_ENCODED_JSON}?encoding=hex"
-```
-
----
-
-### Step 1
-
-This example uses the Terra 2 LCD endpoint and the [`Assembly` contract](../../smart-contracts/astral-assembly) address associated with `pisco-1` testnet. 
+A smart query is a `GET` request to the REST endpoint with the query JSON encoded in base64:
 
 ```bash
-curl --location --request GET "https://pisco-lcd.terra.dev/wasm/contract/terra195m6n5xq4rkjy47fn5y3s08tfmj3ryknj55jqvgq2y55zul9myzsgy06hk/smart/{HEX_ENCODED_JSON}?encoding=hex"
+curl "{REST_ENDPOINT}/cosmwasm/wasm/v1/contract/{CONTRACT_ADDRESS}/smart/{BASE64_QUERY}"
 ```
 
----
+### Step 1: Write the Query
 
-### Step 2
-
-To fill the `HEX_ENCODED_JSON` variable, we first need to create the `JSON` containing our query. This example queries the Assembly contract's configuration.
-
-```json 
-{
-    "config": {}
-}
-```
-
----
-
-### Step 3
-
-Once you have your `JSON` object, you can encode your query using a [Hex encoder](https://www.convertstring.com/EncodeDecode/HexEncode). 
-
-The result gets inserted into our `GET` message. 
-
-
-```bash
-curl --location --request GET "https://pisco-lcd.terra.dev/wasm/contract/terra195m6n5xq4rkjy47fn5y3s08tfmj3ryknj55jqvgq2y55zul9myzsgy06hk/smart/7B0D0A2020202022636F6E666967223A207B7D0D0A7D?encoding=hex"
-```
----
-
-### Step 4
-
-Executing the query returns the current block `height` as well as an encoded `JSON` string containing our query response. 
-
-```bash
-{
-    "height": "3394568", 
-    "result": {
-        "smart": "eyJ4YXN0cm9fdG9rZW5fYWRkciI6InRlcnJhMWN0enRoa2MwbnpzZXBwcXRxbHdxOW1qd3k5Z3E4aHQyNTM0cnRjajN5cGxlcm0wNnNubXFmYzV1Y3IiLCJ2eGFzdHJvX3Rva2VuX2FkZHIiOm51bGwsImliY19jb250cm9sbGVyIjoidGVycmExOGthdzQ4dmFsNWQ5Y3k3OXhsMGs3a3EzeDZ5MDc3djBocTlnd2h3cDdjbmF3bjJtanIycWR3YTJ3MiIsImJ1aWxkZXJfdW5sb2NrX2FkZHIiOiJ0ZXJyYTF6cWZ2M2h5dG4zOGs2MGpoZnF2YWphMGo1Z3Z5cnBqZ2NzZHh0OHo2NWZnbmEzaHk5OTlzeHh0N2VnIiwicHJvcG9zYWxfdm90aW5nX3BlcmlvZCI6MjAwLCJwcm9wb3NhbF9lZmZlY3RpdmVfZGVsYXkiOjUwLCJwcm9wb3NhbF9leHBpcmF0aW9uX3BlcmlvZCI6NDAwLCJwcm9wb3NhbF9yZXF1aXJlZF9kZXBvc2l0IjoiMTAwMCIsInByb3Bvc2FsX3JlcXVpcmVkX3F1b3J1bSI6IjAuMDAxIiwicHJvcG9zYWxfcmVxdWlyZWRfdGhyZXNob2xkIjoiMC41MSIsIndoaXRlbGlzdGVkX2xpbmtzIjpbImh0dHBzOi8vZm9ydW0uYXN0cm9wb3J0LmZpLyIsImh0dHA6Ly9mb3J1bS5hc3Ryb3BvcnQuZmkvIiwiaHR0cHM6Ly9hc3Ryb3BvcnQuZmkvIiwiaHR0cDovL2FzdHJvcG9ydC5maS8iXX0="
-    }
-}
-```
-
-{/* ```bash
-{
-    "height": "3394568", 
-    "result": {
-        "smart": "<base64-encoded-string>"
-    }
-}
-``` */}
-
----
-
-### Step 5
-
-To decode the response, we use a [Base64 decoder](https://www.base64decode.org/) and input our raw query response. 
-
-The result is our final query response. 
+This example asks the Terra Router 2.0 contract for its configuration:
 
 ```json
 {
-    "xastro_token_addr": "terra1ctzthkc0nzseppqtqlwq9mjwy9gq8ht2534rtcj3yplerm06snmqfc5ucr",
-    "vxastro_token_addr": null,
-    "ibc_controller": "terra18kaw48val5d9cy79xl0k7kq3x6y077v0hq9gwhwp7cnawn2mjr2qdwa2w2",
-    "builder_unlock_addr": "terra1zqfv3hytn38k60jhfqvaja0j5gvyrpjgcsdxt8z65fgna3hy999sxxt7eg",
-    "proposal_voting_period": 200,
-    "proposal_effective_delay": 50,
-    "proposal_expiration_period": 400,
-    "proposal_required_deposit": "1000", // testnet deposit amount
-    "proposal_required_quorum": "0.001",
-    "proposal_required_threshold": "0.51",
-    "whitelisted_links": [
-        "https://forum.astroport.fi/",
-        "http://forum.astroport.fi/",
-        "https://astroport.fi/",
-        "http://astroport.fi/"
-    ]
+  "config": {}
 }
 ```
 
-</CH.Scrollycoding>
+### Step 2: Encode It
+
+```bash
+echo -n '{"config":{}}' | base64
+# eyJjb25maWciOnt9fQ==
+```
+
+### Step 3: Send the Request
+
+```bash
+curl "https://terra-rest.publicnode.com/cosmwasm/wasm/v1/contract/terra1txm8xcy8mete9e5zh5ktqr4jm4cq4ja8djttg3zkqll64x4ksq7qknaesf/smart/eyJjb25maWciOnt9fQ=="
+```
+
+The response wraps the contract's answer in `data`:
+
+```json
+{
+  "data": {
+    "astroport_factory": "terra14x9fr055x5hvr48hzy2t4q7kvjvfttsvxusa4xsdcy702mnzsvuqprer8r"
+  }
+}
+```
+
+The same request against `https://neutron-api.polkachu.com` with the Neutron Router 2.0 address (`neutron1xuh7nqt486gkvkxdwt773fzs5uptxy0ylzehm3spq7rx8r2kaspqzu0hv6`) returns the Neutron factory.
+
+## Querying with CosmJS
+
+`CosmWasmClient` is a read-only client: it needs no wallet.
+
+```js
+import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate";
+
+const client = await CosmWasmClient.connect("https://terra-rpc.publicnode.com");
+
+const config = await client.queryContractSmart(
+  "terra1txm8xcy8mete9e5zh5ktqr4jm4cq4ja8djttg3zkqll64x4ksq7qknaesf",
+  { config: {} }
+);
+
+console.log(config); // { astroport_factory: "terra14x9fr0..." }
+```
+
+## Sending Transactions with CosmJS
+
+`SigningCosmWasmClient` signs and broadcasts transactions. Use the address prefix, HD path and gas price of the chain you are on.
+
+```js
+import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
+import { stringToPath } from "@cosmjs/crypto";
+import { GasPrice } from "@cosmjs/stargate";
+
+// Terra
+const wallet = await DirectSecp256k1HdWallet.fromMnemonic(process.env.MNEMONIC, {
+  prefix: "terra",
+  hdPaths: [stringToPath("m/44'/330'/0'/0/0")],
+});
+const client = await SigningCosmWasmClient.connectWithSigner(
+  "https://terra-rpc.publicnode.com",
+  wallet,
+  { gasPrice: GasPrice.fromString("0.015uluna") }
+);
+
+// Neutron: prefix "neutron", default HD path, GasPrice.fromString("0.0053untrn")
+
+const [{ address: sender }] = await wallet.getAccounts();
+
+// execute(sender, contract, msg, fee, memo, funds)
+const result = await client.execute(
+  sender,
+  "<contract-address>",
+  { some_message: {} },
+  "auto",
+  "",
+  [] // native coins to attach, sorted by denom
+);
+console.log(result.transactionHash);
+```
+
+Gas prices change over time. Check the chain's current minimum before you rely on the values above.
+
+## Links
+
+- [Terra](terra-2)
+- [Neutron](neutron)
+- [Swapping](../trading/swapping): a full example with queries and a transaction

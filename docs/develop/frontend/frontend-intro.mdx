@@ -1,5 +1,7 @@
 # Frontend
 
+The Astroport app is live at [app.astroport.fi](https://app.astroport.fi) for Terra and Neutron. It uses the same contracts that these docs describe: see [Contract Addresses](/docs/develop/smart-contracts/contract-addresses).
+
 ## Docker
 
 Anyone can run the Astroport User Interface (UI) in Docker. Docker images for the frontend can be found in the [official Astroport GitHub Packages](https://github.com/orgs/astroport-fi/packages).
@@ -34,7 +36,7 @@ Once the Docker image has been pulled successfully, run the image using the foll
     <CH.Code>
 
         ```bash 
-        docker pull docker.pkg.github.com/astroport-fi/<repository>/<package>:<tag>
+        docker run -p 8000:80 docker.pkg.github.com/astroport-fi/<repository>/<package>:<tag>
         ```
 
     </CH.Code>
@@ -45,9 +47,3 @@ This command runs the Docker image and maps the application which is running on 
 Now, you can open your web browser and navigate to http://localhost:8000 to see the Astroport UI running.
 
 Remember to replace placeholders (`repository`, `package`, and `tag`) with the actual values. You may need to check the exact usage of Docker commands depending on the configuration of your Docker image.
-
-
-
-
-
-

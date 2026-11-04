@@ -1,115 +1,179 @@
-
 import Admonition from '@theme/Admonition'
 
-# Staking/Unstaking LP Tokens
+# Staking/Unstaking LP Tokens with CosmJS
 
-You can stake your LP tokens into the [Generator contract](../../../develop/smart-contracts/tokenomics/generator) to receive ASTRO and/or 3rd party rewards by calling the [`deposit`](../../../develop/smart-contracts/tokenomics/generator#deposit) endpoint. 
+## Overview
 
-You can unstake your LP tokens by calling [`withdraw`](../../../develop/smart-contracts/tokenomics/generator#withdraw) endpoint in the Generator contract. `withdraw` also claims any outstanding token rewards.
+This tutorial is a complete [CosmJS](https://github.com/cosmos/cosmjs) script that stakes a pool's LP tokens in the Incentives contract, checks the position and pending rewards, claims rewards and unstakes. It works with both LP token types: native tokenfactory LP tokens (`factory/<pool>/astroport/share`) and CW20 LP tokens.
 
-The sections below are dedicated to guiding users through the process of staking and unstaking LP tokens in the Generator contract to receive ASTRO and/or third-party rewards.
+For an explanation of each message, see [Staking/Unstaking LP Tokens](../farming/staking-unstaking-lp-tokens) and [Claiming Rewards](../farming/claiming-rewards).
 
-## Staking LP Tokens
-
-### 1. Construct `send` message
-
-Initiate a contract message pointing to the [`send`](https://docs.rs/cw20/latest/cw20/enum.Cw20ExecuteMsg.html#variant.Send) endpoint of the LP token contract that you want to stake. The `send` operation requires three parameters:
-
-- **`contract`:** This refers to the address where the LP tokens are being dispatched. In this context, it should be the generator address.
-- **`amount`:** This specifies the quantity of LP tokens to be sent or staked. 
-- **`msg`:** This is a binary-encoded message that contains a contract call to the `deposit` endpoint. This message will be discussed below. 
+| Chain | Incentives |
+| ----- | ---------- |
+| Terra | `terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x` |
+| Neutron | `neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch` |
 
 <Admonition type="info" title="NOTE">
-    The `send` function should be executed from the contract of the LP token you want to stake.
+
+There are no ASTRO emissions. Staked LP tokens earn only the external incentive schedules added to their pool. Check a pool's `pool_info` in Incentives to see whether it has any.
+
 </Admonition>
 
-<CH.Section>
-    <CH.Code>
+## Step 1: Connect
 
-        ```json focus=1:5,9:11
-        {
-          "send": {
-            "contract": generatorAddress, 
-            "amount": "12345", 
-            "msg": toBase64(
-              {
-                "deposit": {}
-              }
-            ) 
-          }
-        }
-        ```
+The script uses Terra and the LUNA/USDC pool. For Neutron, change the constants, use `prefix: "neutron"` without `hdPaths`, and an `untrn` gas price.
 
-    </CH.Code>
-</CH.Section>
+```js
+import { SigningCosmWasmClient, toBinary } from "@cosmjs/cosmwasm-stargate";
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
+import { stringToPath } from "@cosmjs/crypto";
+import { GasPrice } from "@cosmjs/stargate";
 
-### 2. Construct `deposit` message
+const rpc = "https://terra-rpc.publicnode.com";
+const incentives = "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x";
+const pool = "terra1v3lqxl0eyte9x3nhdgcj8hwvjq76aupnnzz0yll8mxs5cckc29pqvg2scu"; // LUNA/USDC
 
-The `msg` parameter in Step 1 requires a binary-encoded message, which essentially includes a contract call to the [`deposit`](../../../develop/smart-contracts/tokenomics/generator#deposit) endpoint within the Generator contract. For this message, no other parameters are needed.
+const wallet = await DirectSecp256k1HdWallet.fromMnemonic(process.env.MNEMONIC, {
+  prefix: "terra",
+  hdPaths: [stringToPath("m/44'/330'/0'/0/0")],
+});
+const [{ address: sender }] = await wallet.getAccounts();
+const client = await SigningCosmWasmClient.connectWithSigner(rpc, wallet, {
+  gasPrice: GasPrice.fromString("0.015uluna"),
+});
+```
 
-<CH.Section>
-    <CH.Code>
+## Step 2: Find the LP Token
 
-        ```json focus=5:9
-        {
-          "send": {
-            "contract": generatorAddress, 
-            "amount": "12345", 
-            "msg": toBase64(
-              {
-                "deposit": {}
-              }
-            ) 
-          }
-        }
-        ```
+```js
+const { liquidity_token: lpToken } = await client.queryContractSmart(pool, { pair: {} });
+const isNativeLp = lpToken.startsWith("factory/");
+```
 
-    </CH.Code>
-</CH.Section>
+## Step 3: Stake
 
-### 3. Define an encoding function
+Native LP tokens are attached to `deposit`. CW20 LP tokens are sent to Incentives with a `send` that embeds `deposit`.
 
-Next, you'll need to encode the `deposit` message you've constructed. As previously outlined in Step 1, the `msg` parameter requires a binary-encoded string. In Step 2, we prepped our `deposit` message for encoding using a `toBase64` function. Now it's time to actually perform that encoding.
+```js
+const stake = async (amount) => {
+  if (isNativeLp) {
+    return client.execute(sender, incentives, { deposit: {} }, "auto", "", [
+      { denom: lpToken, amount },
+    ]);
+  }
+  return client.execute(
+    sender,
+    lpToken,
+    { send: { contract: incentives, amount, msg: toBinary({ deposit: {} }) } },
+    "auto"
+  );
+};
+```
 
-Please note that the `toBase64` function must be defined in your code environment to use it for encoding purposes. This function is crucial to convert the JSON string representation of our message into a base64 encoded string.
+## Step 4: Check the Position
 
-Here's an example of how to define the `toBase64` function in JavaScript:
+```js
+const staked = await client.queryContractSmart(incentives, {
+  deposit: { lp_token: lpToken, user: sender },
+});
 
-<CH.Section>
-    <CH.Code>
+const pending = await client.queryContractSmart(incentives, {
+  pending_rewards: { lp_token: lpToken, user: sender },
+});
+```
 
-        ```js
-        let toBase64 = (obj) => {
-          return Buffer.from(JSON.stringify(obj)).toString("base64");
-        };
-        ```
-    </CH.Code>
-</CH.Section>
+## Step 5: Claim Rewards
 
-## Unstaking LP Tokens
+```js
+const claim = () =>
+  client.execute(sender, incentives, { claim_rewards: { lp_tokens: [lpToken] } }, "auto");
+```
 
-### 1. Construct `withdraw` message
+## Step 6: Unstake
 
-When you are ready to unstake your LP tokens from the Generator contract, you can execute a contract call to the [`withdraw`](../../../develop/smart-contracts/tokenomics/generator#withdraw) endpoint within the [Generator contract](../../../develop/smart-contracts/tokenomics/generator) itself.
+`withdraw` returns the LP tokens and pays out pending rewards in the same transaction.
 
-The `withdraw` operation requires two parameters:
-- **`lp_token`**: The address of the LP token that you want to withdraw.
-- **`amount`**: The quantity of tokens you wish to unstake.
+```js
+const unstake = (amount) =>
+  client.execute(sender, incentives, { withdraw: { lp_token: lpToken, amount } }, "auto");
+```
 
-<Admonition type="info" title="NOTE">
-    You should replace `astroUSDCLPAddress` with the specific address of the LP token you wish to unstake. Each LP token has a unique contract address, so it's important to make sure you are using the correct one in your `withdraw` operation.
-</Admonition>
+## Complete Script
 
-<CH.Section>
-    <CH.Code>
+```js
+import { SigningCosmWasmClient, toBinary } from "@cosmjs/cosmwasm-stargate";
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
+import { stringToPath } from "@cosmjs/crypto";
+import { GasPrice } from "@cosmjs/stargate";
 
-        ```json
-        {
-            "withdraw": {
-                "lp_token": astroUSDCLPAddress,
-                "amount": "5000000"
-            }
-        }
-        ```
-    </CH.Code>
-</CH.Section>
+const rpc = "https://terra-rpc.publicnode.com";
+const incentives = "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x";
+const pool = "terra1v3lqxl0eyte9x3nhdgcj8hwvjq76aupnnzz0yll8mxs5cckc29pqvg2scu";
+const amount = "1000000"; // LP tokens to stake, in base units
+
+const main = async () => {
+  const wallet = await DirectSecp256k1HdWallet.fromMnemonic(process.env.MNEMONIC, {
+    prefix: "terra",
+    hdPaths: [stringToPath("m/44'/330'/0'/0/0")],
+  });
+  const [{ address: sender }] = await wallet.getAccounts();
+  const client = await SigningCosmWasmClient.connectWithSigner(rpc, wallet, {
+    gasPrice: GasPrice.fromString("0.015uluna"),
+  });
+
+  const { liquidity_token: lpToken } = await client.queryContractSmart(pool, { pair: {} });
+  const isNativeLp = lpToken.startsWith("factory/");
+
+  // Stake
+  const stakeTx = isNativeLp
+    ? await client.execute(sender, incentives, { deposit: {} }, "auto", "", [
+        { denom: lpToken, amount },
+      ])
+    : await client.execute(
+        sender,
+        lpToken,
+        { send: { contract: incentives, amount, msg: toBinary({ deposit: {} }) } },
+        "auto"
+      );
+  console.log("Staked:", stakeTx.transactionHash);
+
+  // Position and pending rewards
+  const staked = await client.queryContractSmart(incentives, {
+    deposit: { lp_token: lpToken, user: sender },
+  });
+  const pending = await client.queryContractSmart(incentives, {
+    pending_rewards: { lp_token: lpToken, user: sender },
+  });
+  console.log("Staked amount:", staked, "Pending rewards:", pending);
+
+  // Claim
+  const claimTx = await client.execute(
+    sender,
+    incentives,
+    { claim_rewards: { lp_tokens: [lpToken] } },
+    "auto"
+  );
+  console.log("Claimed:", claimTx.transactionHash);
+
+  // Unstake everything
+  const unstakeTx = await client.execute(
+    sender,
+    incentives,
+    { withdraw: { lp_token: lpToken, amount: staked } },
+    "auto"
+  );
+  console.log("Unstaked:", unstakeTx.transactionHash);
+};
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
+```
+
+## Links
+
+- [Staking/Unstaking LP Tokens](../farming/staking-unstaking-lp-tokens)
+- [Claiming Rewards](../farming/claiming-rewards)
+- [Providing/Withdrawing Liquidity](../farming/providing-withdrawing-liquidity)
+- [Contract Addresses](/docs/develop/smart-contracts/contract-addresses)

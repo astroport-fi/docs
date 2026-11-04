@@ -8,7 +8,6 @@ import Layout from "@theme/Layout";
 import BannerUrl from "@site/static/img/banner.png";
 import ChadUrl from "@site/static/img/astrochad.png";
 // import PepeUrl from '@site/static/img/astropepe.png';
-import AssemblyUrl from "@site/static/img/assembly.png";
 // import SearchBar from '@theme/SearchBar';
 import * as animationHero from "@site/static/hero.json";
 
@@ -90,12 +89,13 @@ export default function Home() {
             <div className="max-w-[600px] w-full mx-auto aspect-square mb-10">
               <Satellites />
             </div>
-            <h2 className={styles.title}>Govern</h2>
+            <h2 className={styles.title}>Long-Term Support</h2>
             <p className={subheaderClasses}>
-              Discover how to propose contributions as an active community
-              member to the Astroport governing body, the Astral Assembly.
+              Astroport's contracts and app stay live under long-term support,
+              with security fixes first. Fees burn ASTRO and reward yASTRO
+              stakers.
             </p>
-            <ContentBox title="Govern" />
+            <ContentBox title="LTS" />
           </div>
 
           <div>

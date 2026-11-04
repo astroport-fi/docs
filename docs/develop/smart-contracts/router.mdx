@@ -2,35 +2,63 @@
 sidebar_position: 6
 ---
 
+import Admonition from '@theme/Admonition'
+
 # Router
 
 ## Overview
 
-The Router contract contains logic to facilitate multi-hop swaps for Cosmos native & CW20 tokens.
+The Router contract performs multi-hop swaps across Astroport pools, for native and CW20 tokens. Two router versions are live on each chain:
+
+- **Router 2.0** (`astroport-router` 2.0.0) is the recommended router. A hop is either a pool the factory knows for an asset pair (`astro_swap`) or a pool given by address (`pool_swap`). With `pool_swap`, pools that aren't registered in the factory, such as the USDC transmuter on Terra, can be part of a route. `minimum_receive` is required and is the route's only price check.
+- **Router 1.3** (`astroport-router` 1.3.1) is still live with its old API: every hop is resolved through the factory, `minimum_receive` is optional and `max_spread` is checked per hop. See [Router 1.3](#router-13).
+
+Router 2.0 is deployed as its own instance. Router 1.x instances keep their old API and can't be migrated to 2.0. The Maker 2.0 contracts swap through Router 2.0.
 
 ## Links
 
-- **Contract Address:** [terra1j8hayvehh3yy02c2vtw5fdhz9f4drhtee8p5n5rguvg3nyd6m83qd2y90a](https://terrasco.pe/mainnet/address/terra1j8hayvehh3yy02c2vtw5fdhz9f4drhtee8p5n5rguvg3nyd6m83qd2y90a)
-- **Testnet Address:** [terra1na348k6rvwxje9jj6ftpsapfeyaejxjeq6tuzdmzysps20l6z23smnlv64](https://finder.terra.money/testnet/address/terra1na348k6rvwxje9jj6ftpsapfeyaejxjeq6tuzdmzysps20l6z23smnlv64)
+- **Terra Router 2.0:** [terra1txm8xcy8mete9e5zh5ktqr4jm4cq4ja8djttg3zkqll64x4ksq7qknaesf](https://terrasco.pe/mainnet/address/terra1txm8xcy8mete9e5zh5ktqr4jm4cq4ja8djttg3zkqll64x4ksq7qknaesf)
+- **Neutron Router 2.0:** [neutron1xuh7nqt486gkvkxdwt773fzs5uptxy0ylzehm3spq7rx8r2kaspqzu0hv6](https://neutron.celat.one/neutron-1/contracts/neutron1xuh7nqt486gkvkxdwt773fzs5uptxy0ylzehm3spq7rx8r2kaspqzu0hv6)
+- **Terra Router 1.3.1:** [terra18plp90j0zd596zt3zdsf0w9vvk5ukwlwzwkksxv9mdu8rscat9sqndk5qz](https://terrasco.pe/mainnet/address/terra18plp90j0zd596zt3zdsf0w9vvk5ukwlwzwkksxv9mdu8rscat9sqndk5qz)
+- **Neutron Router 1.3.1:** [neutron1rwj6mfxzzrwskur73v326xwuff52vygqk73lr7azkehnfzz5f5wskwekf4](https://neutron.celat.one/neutron-1/contracts/neutron1rwj6mfxzzrwskur73v326xwuff52vygqk73lr7azkehnfzz5f5wskwekf4)
 - **Contract Repo:** https://github.com/astroport-fi/astroport-core/tree/main/contracts/router
 - **contract.rs:** https://github.com/astroport-fi/astroport-core/blob/main/contracts/router/src/contract.rs
-- **router.rs:** https://github.com/astroport-fi/astroport-core/blob/main/packages/astroport/src/router.rs
+- **msg.rs (2.0 types):** https://github.com/astroport-fi/astroport-core/blob/main/contracts/router/src/msg.rs
+- **router.rs (1.x types):** https://github.com/astroport-fi/astroport-core/blob/main/packages/astroport/src/router.rs
 - **Tests:** https://github.com/astroport-fi/astroport-core/tree/main/contracts/router/tests
+
+The 2.0 message types live in the router crate (`astroport_router::msg`, use it with the `library` feature), not in the shared `astroport` package. `astroport::router` keeps the 1.x types.
+
+## Price protection
+
+Pools' own spread checks are disabled on every hop, including single-hop swaps. The only price guarantee is `minimum_receive`: after the last hop, the router checks that the receiver got at least that amount of the ask asset and reverts the whole transaction otherwise. It is required and must be greater than zero.
+
+The bound is only as good as the number you send. Set `minimum_receive` from a price you trust (for example your own quote minus slippage), not from a hop's own simulation. `minimum_receive: "1"` is accepted but protects almost nothing.
+
+Nested routes are refused: a route can't be started while another one is in progress (`RouteInProgress`).
+
+## Choosing pools
+
+`pool_swap` accepts any address. The router checks that the pool's `pair {}` query reports that address and both assets, which catches mistyped routes, but it can't prove a contract is a genuine Astroport pool. Only build `pool_swap` routes from pools you trust.
+
+Each hop offers the router's whole balance of the offer asset. The router holds nothing between transactions, so this is only the route's own funds plus anything sent to the router by mistake.
+
+A route has at most 50 hops. Each hop must offer the asset the previous hop asked for, and a hop can't offer and ask for the same asset.
 
 ## InstantiateMsg
 
-Initializes the Router contract with the Astroport factory contract address.
+Initializes the contract with the Astroport factory address, used to resolve `astro_swap` hops.
 
 <CH.Section>
     <CH.Code>
 
-        ```json json 
+        ```json json
         {
-            "astroport_factory": "terra..."
+            "astroport_factory": "terra14x9fr055x5hvr48hzy2t4q7kvjvfttsvxusa4xsdcy702mnzsvuqprer8r"
         }
         ```
 
-        ```rust router.rs
+        ```rust msg.rs
         #[cw_serde]
         pub struct InstantiateMsg {
             pub astroport_factory: String,
@@ -38,149 +66,190 @@ Initializes the Router contract with the Astroport factory contract address.
         ```
 
     </CH.Code>
+
+| **Params**      | **Type** | **Description** |
+| ----------- | ----------- | ----------- |
+| [`astroport_factory`](focus://json#2)   | `String`        | The Astroport factory contract address      |
+
 </CH.Section>
 
 ## ExecuteMsg
 
-### `receive`
+### `execute_swap_operations`
 
-CW20 receive msg.
+Swaps the attached amount along the route. Hops execute one by one and the last one sends the ask asset to `to` (the sender if omitted). Anyone can call it.
+
+The response data contains the total `return_amount` (a `SwapResponseData`). It is only set when the route starts with a native asset; a CW20 `send` resets the response data.
+
+This example, on Terra, swaps 10 LUNA for USDC (Noble) through the factory's LUNA/USDC pool, then USDC for USDC.inj through the USDC transmuter, a pool that isn't registered in the factory. Attach the `uluna` to the message.
 
 <CH.Section>
     <CH.Code>
 
         ```json json
         {
-            "receive": {
-                "sender": "terra...", 
-                "amount": "123", 
-                "msg": "<base64_encoded_json_string>"
-            }
-        }
-        ```
-
-        ```rust router.rs focus=1:3,22
-            #[cw_serde]
-            pub enum ExecuteMsg {
-                Receive(Cw20ReceiveMsg),
-                ExecuteSwapOperations {
-                    operations: Vec<SwapOperation>,
-                    minimum_receive: Option<Uint128>,
-                    to: Option<String>,
-                    max_spread: Option<Decimal>,
-                },
-                ExecuteSwapOperation {
-                    operation: SwapOperation,
-                    to: Option<String>,
-                    max_spread: Option<Decimal>,
-                    single: bool,
-                },
-                AssertMinimumReceive {
-                    asset_info: AssetInfo,
-                    prev_balance: Uint128,
-                    minimum_receive: Uint128,
-                    receiver: String,
-                },
-            }
-        ```
-
-    </CH.Code>
-
-| **Params**      | **Type** | **Description** |
-| ----------- | ----------- | ----------- |
-| [`receive`](focus://json#2:6)   | [`Cw20ReceiveMsg`](https://docs.rs/cw20/latest/cw20/struct.Cw20ReceiveMsg.html)        | CW20 receive message      |
-
-</CH.Section>
-
-### `execute_swap_operations`
-
-Performs multi-hop swap operations for native Cosmos & CW20 tokens. Swaps execute one-by-one and the last swap will return the ask token. This function is public (can be called by anyone).
-
-<CH.Section>
-    <CH.Code>
-
-        ```json json 
-        {
             "execute_swap_operations": {
                 "operations": [
-                    {
-                        "native_swap": {
-                            "offer_denom": "...", 
-                            "ask_denom": "..."
-                        }
-                    },
                     {
                         "astro_swap": {
                             "offer_asset_info": {
                                 "native_token": {
-                                    "denom": "..."
+                                    "denom": "uluna"
                                 }
                             },
                             "ask_asset_info": {
-                                "token": {
-                                    "contract_addr": "..."
+                                "native_token": {
+                                    "denom": "ibc/2C962DAB9F57FE0921435426AE75196009FAA1981BF86991203C8411F8980FDB"
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "pool_swap": {
+                            "pool_addr": "terra1p3sea2vjewtr9ap4hv7nc75k5jc852ftf0w5u06wsk420y5urc9s9xtxdj",
+                            "offer_asset_info": {
+                                "native_token": {
+                                    "denom": "ibc/2C962DAB9F57FE0921435426AE75196009FAA1981BF86991203C8411F8980FDB"
+                                }
+                            },
+                            "ask_asset_info": {
+                                "native_token": {
+                                    "denom": "ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B"
                                 }
                             }
                         }
                     }
                 ],
-                "minimum_receive": "123",
-                "to": "...", 
-                "max_spread": "0.05"
+                "minimum_receive": "390000",
+                "to": "terra1..."
             }
         }
         ```
 
-        ```rust router.rs focus=1:2,4:9,22
-            #[cw_serde]
-            pub enum ExecuteMsg {
-                Receive(Cw20ReceiveMsg),
-                ExecuteSwapOperations {
-                    operations: Vec<SwapOperation>,
-                    minimum_receive: Option<Uint128>,
-                    to: Option<String>,
-                    max_spread: Option<Decimal>,
-                },
-                ExecuteSwapOperation {
-                    operation: SwapOperation,
-                    to: Option<String>,
-                    max_spread: Option<Decimal>,
-                    single: bool,
-                },
-                AssertMinimumReceive {
-                    asset_info: AssetInfo,
-                    prev_balance: Uint128,
-                    minimum_receive: Uint128,
-                    receiver: String,
-                },
-            }
+        ```rust msg.rs focus=1:9,18
+        #[cw_serde]
+        pub enum ExecuteMsg {
+            Receive(Cw20ReceiveMsg),
+            ExecuteSwapOperations {
+                operations: Vec<SwapOperation>,
+                minimum_receive: Uint128,
+                to: Option<String>,
+            },
+
+            /// Internal use
+            ExecuteSwapOperation {
+                operation: SwapOperation,
+                to: Option<String>,
+            },
+        }
+
+        #[cw_serde]
+        pub struct SwapResponseData {
+            pub return_amount: Uint128,
+        }
         ```
 
     </CH.Code>
 
-
 | **Params**      | **Type** | **Description** |
 | ----------- | ----------- | ----------- |
-| [`operations`](focus://json#3:24)   | [`Vec<SwapOperation>`](#swapoperation)        | A vector of swap operations        |
-| [`minimum_receive`](focus://json#25)   | `Option<Uint128>`        | The minimum amount of tokens to get from a swap        |
-| [`to`](focus://json#26)   | `Option<String>`        | Addess receving tokens (if different from sender)        |
-| [`max_spread`](focus://json#27)   | `Option<Decimal>`        | Max spread        |
+| [`operations`](focus://json#3:32)   | [`Vec<SwapOperation>`](#swapoperation)        | The hops of the route, between 1 and 50      |
+| [`minimum_receive`](focus://json#33)   | `Uint128`        | Required, greater than zero. The least amount of the last ask asset the receiver must get, otherwise the whole transaction reverts      |
+| [`to`](focus://json#34)   | `Option<String>`        | The recipient of the last ask asset. Defaults to the sender      |
 
 </CH.Section>
 
+On Neutron, this route swaps ATOM for NTRN in a pool given by address, then NTRN for ASTRO through the factory's NTRN/ASTRO pool:
+
+```json
+{
+    "execute_swap_operations": {
+        "operations": [
+            {
+                "pool_swap": {
+                    "pool_addr": "neutron15d0se9nw9stqx9ms9ey85gfpraqwl80t5urmjfk2jwtqxpxk3x3qctjt4n",
+                    "offer_asset_info": {
+                        "native_token": {
+                            "denom": "ibc/C4CFF46FD6DE35CA4CF4CE031E643C8FDC9BA4B99AE598E9B0ED98FE3A2319F9"
+                        }
+                    },
+                    "ask_asset_info": {
+                        "native_token": {
+                            "denom": "untrn"
+                        }
+                    }
+                }
+            },
+            {
+                "astro_swap": {
+                    "offer_asset_info": {
+                        "native_token": {
+                            "denom": "untrn"
+                        }
+                    },
+                    "ask_asset_info": {
+                        "native_token": {
+                            "denom": "factory/neutron1ffus553eet978k024lmssw0czsxwr97mggyv85lpcsdkft8v9ufsz3sa07/astro"
+                        }
+                    }
+                }
+            }
+        ],
+        "minimum_receive": "1700000000"
+    }
+}
+```
+
 #### `SwapOperation`
+
+A hop of a route.
 
 <CH.Section>
     <CH.Code>
 
-        ```rust router.rs
+        ```json json
+        [
+            {
+                "astro_swap": {
+                    "offer_asset_info": {
+                        "native_token": {
+                            "denom": "untrn"
+                        }
+                    },
+                    "ask_asset_info": {
+                        "native_token": {
+                            "denom": "factory/neutron1ffus553eet978k024lmssw0czsxwr97mggyv85lpcsdkft8v9ufsz3sa07/astro"
+                        }
+                    }
+                }
+            },
+            {
+                "pool_swap": {
+                    "pool_addr": "terra1p3sea2vjewtr9ap4hv7nc75k5jc852ftf0w5u06wsk420y5urc9s9xtxdj",
+                    "offer_asset_info": {
+                        "native_token": {
+                            "denom": "ibc/2C962DAB9F57FE0921435426AE75196009FAA1981BF86991203C8411F8980FDB"
+                        }
+                    },
+                    "ask_asset_info": {
+                        "native_token": {
+                            "denom": "ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B"
+                        }
+                    }
+                }
+            }
+        ]
+        ```
+
+        ```rust msg.rs
         #[cw_serde]
         pub enum SwapOperation {
-            NativeSwap {
-                offer_denom: String,
-                ask_denom: String,
-            },
             AstroSwap {
+                offer_asset_info: AssetInfo,
+                ask_asset_info: AssetInfo,
+            },
+            PoolSwap {
+                pool_addr: String,
                 offer_asset_info: AssetInfo,
                 ask_asset_info: AssetInfo,
             },
@@ -191,196 +260,71 @@ Performs multi-hop swap operations for native Cosmos & CW20 tokens. Swaps execut
 
 | **Variants**      | **Description** |
 | ----------- | ----------- |
-| [`NativeSwap`](focus://router.rs#3:6)    | Native swap        |
-| [`AstroSwap`](focus://router.rs#7:10)      | ASTRO swap       |
+| [`astro_swap`](focus://json#2:15)    | Swap in the factory's pool for this asset pair. The factory must know a pool for the two assets       |
+| [`pool_swap`](focus://json#16:30)      | Swap in a specific pool, given by `pool_addr`. The pool doesn't have to be registered in the factory, but its `pair {}` query must report that address and both assets       |
+
+`offer_asset_info` and `ask_asset_info` are [`AssetInfo`](./common-types#assetinfo) values: `{"native_token": {"denom": "..."}}` or `{"token": {"contract_addr": "..."}}`.
+
+</CH.Section>
+
+### `receive`
+
+CW20 receive hook, used when the first offer asset is a CW20 token. Send the token to the router with a CW20 `send` whose `msg` is the base64-encoded `execute_swap_operations` message below (the same fields as the execute message).
+
+<CH.Section>
+    <CH.Code>
+
+        ```json json
+        {
+            "send": {
+                "contract": "terra1txm8xcy8mete9e5zh5ktqr4jm4cq4ja8djttg3zkqll64x4ksq7qknaesf",
+                "amount": "1000000",
+                "msg": "<base64 of the hook message>"
+            }
+        }
+        ```
+
+        ```rust msg.rs
+        #[cw_serde]
+        pub enum Cw20HookMsg {
+            ExecuteSwapOperations {
+                operations: Vec<SwapOperation>,
+                minimum_receive: Uint128,
+                to: Option<String>,
+            },
+        }
+        ```
+
+    </CH.Code>
+
+| **Params**      | **Type** | **Description** |
+| ----------- | ----------- | ----------- |
+| [`contract`](focus://json#3)   | `String`        | The router address      |
+| [`amount`](focus://json#4)   | `Uint128`        | The amount of the CW20 token to swap      |
+| [`msg`](focus://json#5)   | `Binary`        | Base64 of a `Cw20HookMsg::ExecuteSwapOperations`, for example `{"execute_swap_operations":{"operations":[...],"minimum_receive":"123"}}`      |
 
 </CH.Section>
 
 ### `execute_swap_operation`
 
-Executes a single swap operation. This message is for internal use.
-
-<CH.Section>
-    <CH.Code>
-
-        ```json astro_swap.json
-        {
-            "execute_swap_operation": {
-                "operation": {
-                    "astro_swap": {
-                        "offer_asset_info": {
-                            "native_token": {
-                                "denom": "..."
-                            }
-                        }, 
-                        "ask_asset_info": {
-                            "token": {
-                                "contract_addr": "..."
-                            }
-                        }
-                    }
-                },
-                "to": "...",
-                "max_spread": "0.05",
-                "single": false
-            }
-        }
-        ```
-
-        ```json native_swap.json
-        {
-            "execute_swap_operation": {
-                "operation": {
-                    "native_swap": {
-                        "offer_denom": "...", 
-                        "ask_denom": "..."
-                    }
-                },
-                "to": "...",
-                "max_spread": "0.05",
-                "single": false
-            }
-        }
-        ```
-
-        ```rust router.rs focus=1:2,10:15,22
-            #[cw_serde]
-            pub enum ExecuteMsg {
-                Receive(Cw20ReceiveMsg),
-                ExecuteSwapOperations {
-                    operations: Vec<SwapOperation>,
-                    minimum_receive: Option<Uint128>,
-                    to: Option<String>,
-                    max_spread: Option<Decimal>,
-                },
-                ExecuteSwapOperation {
-                    operation: SwapOperation,
-                    to: Option<String>,
-                    max_spread: Option<Decimal>,
-                    single: bool,
-                },
-                AssertMinimumReceive {
-                    asset_info: AssetInfo,
-                    prev_balance: Uint128,
-                    minimum_receive: Uint128,
-                    receiver: String,
-                },
-            }
-        ```
-
-    </CH.Code>
-
-| **Params**      | **Type** | **Description** |
-| ----------- | ----------- | ----------- |
-| [`operation`](focus://astro_swap.json#3:16)   | [`<SwapOperation>`](#swapoperation)        | Native or Astro swap operation        |
-| [`to`](focus://astro_swap.json#17)   | `Option<String>`        | Addess receving tokens (if different from sender)        |
-| [`max_spread`](focus://astro_swap.json#18)   | `Option<Decimal>`        | Max spread        |
-| [`single`](focus://astro_swap.json#19)   | `bool`        | Defines whether this swap is single or part of a multi hop route        |
-
-</CH.Section>
-
-### `assert_minimum_receive`
-
-Checks that an amount of ask tokens exceeds `minimum_receive`. This message is for internal use.
-
-<CH.Section>
-    <CH.Code>
-
-        ```json json 
-        {
-            "asset_info": {
-                "token": {
-                    "contract_addr": "..."
-                }
-            },
-            "prev_balance": "123",
-            "minimum_receive": "123",
-            "receiver": "..."
-        }
-        ```
-
-        ```rust router.rs focus=1:2,16:22
-            #[cw_serde]
-            pub enum ExecuteMsg {
-                Receive(Cw20ReceiveMsg),
-                ExecuteSwapOperations {
-                    operations: Vec<SwapOperation>,
-                    minimum_receive: Option<Uint128>,
-                    to: Option<String>,
-                    max_spread: Option<Decimal>,
-                },
-                ExecuteSwapOperation {
-                    operation: SwapOperation,
-                    to: Option<String>,
-                    max_spread: Option<Decimal>,
-                    single: bool,
-                },
-                AssertMinimumReceive {
-                    asset_info: AssetInfo,
-                    prev_balance: Uint128,
-                    minimum_receive: Uint128,
-                    receiver: String,
-                },
-            }
-        ```
-
-    </CH.Code>
-
-| **Params**      | **Type** | **Description** |
-| ----------- | ----------- | ----------- |
-| [`asset_info`](focus://json#2:6)   | [`AssetInfo`](./common-types#assetinfo)        | Information about an asset stored in an `AssetInfo` struct       |
-| [`prev_balance`](focus://json#7)   | `Uint128`        | Previous balance        |
-| [`minimum_receive`](focus://json#8)   | `Uint128`        | The minimum amount of tokens to get from a swap    |
-| [`receiver`](focus://json#9)   | `String`        | Addess receving tokens         |
-
-</CH.Section>
+Executes a single hop. Only the router itself can call it; `execute_swap_operations` uses it for every hop.
 
 ## QueryMsg
 
 ### `config`
 
-Queries the general configuration for the router contract.
+Returns the router's configuration.
 
 <CH.Section>
     <CH.Code>
 
-        ```json json 
+        ```json json
         {
             "config": {}
         }
         ```
 
-        ```rust router.rs focus=1:5,11
-        #[cw_serde]
-        #[derive(QueryResponses)]
-        pub enum QueryMsg {
-            #[returns(ConfigResponse)]
-            Config {},
-            #[returns(SimulateSwapOperationsResponse)]
-            SimulateSwapOperations {
-                offer_amount: Uint128,
-                operations: Vec<SwapOperation>,
-            },
-        }
-        ```
-
-    </CH.Code>
-</CH.Section>
-
-#### `ConfigResponse`
-
-This structure describes a custom struct to return a query response containing the base contract configuration.
-
-<CH.Section>
-    <CH.Code>
-
-        ```json json 
-        {
-            "astroport_factory": "terra..."
-        }
-        ```
-
-        ```rust router.rs
+        ```rust msg.rs
         #[cw_serde]
         pub struct ConfigResponse {
             pub astroport_factory: String,
@@ -391,38 +335,47 @@ This structure describes a custom struct to return a query response containing t
 
 | **Params**      | **Type** | **Description** |
 | ----------- | ----------- | ----------- |
-| `astroport_factory`   | `String`        | The Astroport factory contract address         |
+| `astroport_factory`   | `String`        | The Astroport factory contract address      |
 
 </CH.Section>
 
 ### `simulate_swap_operations`
 
-Simulates multi-hop swap operations. 
+Simulates a route for an offer amount and returns the amount received, as `{"amount": "..."}` (`SimulateSwapOperationsResponse`). Takes the same operations as `execute_swap_operations`.
 
 <CH.Section>
     <CH.Code>
 
-        ```json json 
+        ```json json
         {
             "simulate_swap_operations": {
-                "offer_amount": "123",
+                "offer_amount": "10000000",
                 "operations": [
-                    {
-                        "native_swap": {
-                            "offer_denom": "...", 
-                            "ask_denom": "..."
-                        }
-                    },
                     {
                         "astro_swap": {
                             "offer_asset_info": {
                                 "native_token": {
-                                    "denom": "..."
+                                    "denom": "uluna"
                                 }
                             },
                             "ask_asset_info": {
-                                "token": {
-                                    "contract_addr": "..."
+                                "native_token": {
+                                    "denom": "ibc/2C962DAB9F57FE0921435426AE75196009FAA1981BF86991203C8411F8980FDB"
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "pool_swap": {
+                            "pool_addr": "terra1p3sea2vjewtr9ap4hv7nc75k5jc852ftf0w5u06wsk420y5urc9s9xtxdj",
+                            "offer_asset_info": {
+                                "native_token": {
+                                    "denom": "ibc/2C962DAB9F57FE0921435426AE75196009FAA1981BF86991203C8411F8980FDB"
+                                }
+                            },
+                            "ask_asset_info": {
+                                "native_token": {
+                                    "denom": "ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B"
                                 }
                             }
                         }
@@ -432,53 +385,114 @@ Simulates multi-hop swap operations.
         }
         ```
 
-        ```rust router.rs
-            #[cw_serde]
-            #[derive(QueryResponses)]
-            pub enum QueryMsg {
-                #[returns(ConfigResponse)]
-                Config {},
-                #[returns(SimulateSwapOperationsResponse)]
-                SimulateSwapOperations {
-                    offer_amount: Uint128,
-                    operations: Vec<SwapOperation>,
-                },
-            }
+        ```rust msg.rs
+        #[cw_serde]
+        pub struct SimulateSwapOperationsResponse {
+            pub amount: Uint128,
+        }
         ```
 
     </CH.Code>
 
 | **Params**      | **Type** | **Description** |
 | ----------- | ----------- | ----------- |
-| [`offer_amount`](focus://json#3)   | `Uint128`        | The amount of tokens to swap         |
-| [`operations`](focus://json#4:25)   | [`Vec<SwapOperation>`](#swapoperation)        | The swap operations to perform, each swap involving a specific pool         |
+| [`offer_amount`](focus://json#3)   | `Uint128`        | The amount of the first offer asset      |
+| [`operations`](focus://json#4:33)   | [`Vec<SwapOperation>`](#swapoperation)        | The route      |
 
 </CH.Section>
 
-#### `SimulateSwapOperationsResponse`
+### `reverse_simulate_swap_operations`
 
-This structure describes a custom struct to return a query response containing the end amount of a swap simulation.
+Simulates a route backwards: returns the offer amount needed to receive `ask_amount`, as a plain `Uint128` string.
 
 <CH.Section>
     <CH.Code>
 
         ```json json
         {
-            "amount": "123"
+            "reverse_simulate_swap_operations": {
+                "ask_amount": "1000000",
+                "operations": [
+                    {
+                        "astro_swap": {
+                            "offer_asset_info": {
+                                "native_token": {
+                                    "denom": "untrn"
+                                }
+                            },
+                            "ask_asset_info": {
+                                "native_token": {
+                                    "denom": "factory/neutron1ffus553eet978k024lmssw0czsxwr97mggyv85lpcsdkft8v9ufsz3sa07/astro"
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
         }
         ```
 
-        ```rust router.rs
-            #[cw_serde]
-            pub struct SimulateSwapOperationsResponse {
-                pub amount: Uint128,
-            }
+        ```rust msg.rs
+        #[cw_serde]
+        #[derive(QueryResponses)]
+        pub enum QueryMsg {
+            #[returns(ConfigResponse)]
+            Config {},
+            #[returns(SimulateSwapOperationsResponse)]
+            SimulateSwapOperations {
+                offer_amount: Uint128,
+                operations: Vec<SwapOperation>,
+            },
+            #[returns(Uint128)]
+            ReverseSimulateSwapOperations {
+                ask_amount: Uint128,
+                operations: Vec<SwapOperation>,
+            },
+        }
         ```
 
     </CH.Code>
 
 | **Params**      | **Type** | **Description** |
 | ----------- | ----------- | ----------- |
-| [`amount`](focus://json#3)   | `Uint128`        | The amount of tokens received in a swap simulation         |
+| [`ask_amount`](focus://json#3)   | `Uint128`        | The amount of the last ask asset to receive      |
+| [`operations`](focus://json#4:19)   | [`Vec<SwapOperation>`](#swapoperation)        | The route      |
 
 </CH.Section>
+
+## Router 1.3
+
+Router 1.3.1 stays live on both chains for existing integrations. Its messages are the 1.x types in [`astroport::router`](https://github.com/astroport-fi/astroport-core/blob/main/packages/astroport/src/router.rs):
+
+- Hops are `astro_swap` only (factory pools). `native_swap` is part of the type but isn't supported on Terra or Neutron, and there is no `pool_swap`.
+- `execute_swap_operations` takes `operations`, an optional `minimum_receive`, an optional `to` and an optional `max_spread`. `max_spread` is checked on every hop.
+- The `config`, `simulate_swap_operations` and `reverse_simulate_swap_operations` queries have the same shape as in 2.0.
+
+```json
+{
+    "execute_swap_operations": {
+        "operations": [
+            {
+                "astro_swap": {
+                    "offer_asset_info": {
+                        "native_token": {
+                            "denom": "untrn"
+                        }
+                    },
+                    "ask_asset_info": {
+                        "native_token": {
+                            "denom": "factory/neutron1ffus553eet978k024lmssw0czsxwr97mggyv85lpcsdkft8v9ufsz3sa07/astro"
+                        }
+                    }
+                }
+            }
+        ],
+        "minimum_receive": "1000000",
+        "max_spread": "0.01"
+    }
+}
+```
+
+<Admonition type="info" title="NOTE">
+  New integrations should use Router 2.0. It can route through pools the factory doesn't know, and its required `minimum_receive` makes the route's price check explicit.
+</Admonition>

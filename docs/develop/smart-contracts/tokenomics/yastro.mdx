@@ -1,0 +1,534 @@
+---
+sidebar_position: 3
+---
+
+import Admonition from '@theme/Admonition'
+
+# yASTRO
+
+## Overview
+
+yASTRO (`astroport-yastro` 1.0.0, Terra only) is a transferable CW20 that is also its own staking contract. Stake ASTRO and receive the same amount of yASTRO, 1:1. Each week the Terra [Maker](./maker) deposits a quarter of Terra's fees, in USDC.inj, and they stream to yASTRO holders over the following week.
+
+Every balance change (stake, unstake, `transfer`, `send`, `transfer_from`, `send_from`) first settles the rewards of both sides at their old balances, so rewards follow whoever holds the yASTRO, second by second, wherever the token moves: wallets, DAOs, pools.
+
+- **Stake:** attach ASTRO (Terra IBC ASTRO, `ibc/8D8A7F7253615E5F76CB6252A1E1BD921D5EDB7BBAAF8913FB1C77FF125D9995`) to `stake` and receive the same amount of yASTRO. The legacy ASTRO CW20 can't be staked; convert it first.
+- **Unstake:** `unstake` burns yASTRO and starts an unbonding of 7 days. Unbonding ASTRO earns nothing. `withdraw` then sends every matured unbonding. An address can have up to 30 open unbondings.
+- **Claim:** rewards are never pushed. `claim` sends the caller's accrued rewards, and `pending_rewards` shows them. In the app, this is the Rewards Center at [app.astroport.fi/yastro](https://app.astroport.fi/yastro).
+
+yASTRO has no CW20 receive hook: ASTRO is a native denom on Terra, so it's staked by attaching it to `stake`.
+
+## Links
+
+- **Terra Address:** [terra1fe8uj96z7f4jfsnkrdxhchxdhdtx8alr9zjqze76hm2ga6tpxjjq5rdjw7](https://terrasco.pe/mainnet/address/terra1fe8uj96z7f4jfsnkrdxhchxdhdtx8alr9zjqze76hm2ga6tpxjjq5rdjw7) (`astroport-yastro` 1.0.0)
+- **App:** https://app.astroport.fi/yastro
+- **Contract Repo:** https://github.com/astroport-fi/astroport-core/tree/main/contracts/tokenomics/yastro
+- **contract.rs:** https://github.com/astroport-fi/astroport-core/blob/main/contracts/tokenomics/yastro/src/contract.rs
+- **msg.rs:** https://github.com/astroport-fi/astroport-core/blob/main/contracts/tokenomics/yastro/src/msg.rs
+- **rewards.rs:** https://github.com/astroport-fi/astroport-core/blob/main/contracts/tokenomics/yastro/src/rewards.rs
+- **Tests:** https://github.com/astroport-fi/astroport-core/tree/main/contracts/tokenomics/yastro/tests
+
+## Concepts
+
+### Epochs and streaming
+
+Epochs are Astroport's weeks, starting Monday 00:00 UTC (the same weeks [Incentives](./incentives) uses). Everything deposited with `deposit_rewards` during an epoch is queued, then paid out evenly, per second, over the next epoch to yASTRO holders, pro rata to their balance.
+
+- Holding yASTRO for a minute earns a minute of rewards, so there's nothing to gain by buying just before a deposit.
+- The Maker deposits on Sunday night, so each week's fees start streaming at Monday 00:00 UTC.
+- Anything streamed while nobody holds yASTRO is queued again for the next epoch.
+- Fractions of a unit stay in an account's pending rewards until they add up to a whole unit, and so does what the streaming math rounds off. Rounding leaves dust in the contract, never a shortfall.
+
+The APR for a reward denom is `rate * 31_536_000 / total_staked`, in reward units per staked ASTRO unit, with `rate` from [`reward_state`](#reward_state) and `total_staked` from [`staking_state`](#staking_state).
+
+### Reward denoms
+
+Only denoms the owner allows can be deposited, at most 5 ever. ASTRO can't be a reward denom, so staked ASTRO and rewards never mix. On Terra the reward denom is USDC.inj (`ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B`).
+
+Removing a reward denom stops new deposits. What's already queued still streams and owed rewards stay claimable. Removing the Maker's reward denom would make the Maker's `deposit` leg fail, and with it the whole distribution, so the Maker's legs must be changed first.
+
+### `claim_for`
+
+A holder can enable `claim_for` for itself once (`set_claim_for`), for example a DAO treasury with one proposal. After that anyone, such as a bot, can send it its rewards. Holders that never enable it keep their rewards pending, so nothing lands in a contract that can't use it.
+
+### Pools
+
+A pool holding yASTRO earns like any holder. Anyone can call `forward_pool_rewards` for a pool to send its rewards to its LP stakers through [Incentives](./incentives):
+
+- The pool must answer Astroport's `pair {}` query for its own address, with yASTRO among its assets and an LP token it mints itself (`factory/{pool}/astroport/share`, or a CW20 whose minter is the pool).
+- At least `min_lp_staked` of the LP supply (currently 1%) must be staked in Incentives, so a tiny stake can't take a pool's rewards. Until then the rewards stay pending.
+- yASTRO must be on Incentives' fee exemption list (it is on Terra). It then isn't held to Incentives' 5-reward-token limit either. No funds are attached to the call.
+- The rewards become an Incentives schedule on the pool's LP token, from now until the next Monday plus one week, the shortest schedule Incentives allows. LPs who stake their LP tokens in Incentives earn them there. LPs who don't stake in Incentives get none of it.
+- A reward too small for Incentives' minimum of 1 unit per second (about 0.6 to 1.2 USDC per call), or one Incentives rejects, stays with the pool for the next call.
+- From a Maker deposit to an LP being fully paid takes two to three weeks.
+
+### Guarantees and owner powers
+
+The contract always holds at least the staked plus unbonding ASTRO (`staking_state`), and pays rewards only from what was deposited.
+
+The owner (the Terra satellite, run by the "Astroport - Contributors" DAO) can change the reward denoms, the unbonding period (at most 28 days, for new unbondings only), the Incentives address and `min_lp_staked`. The Incentives address decides where pool rewards are forwarded, so it's as trusted as the owner. The owner can't move staked ASTRO or anyone's rewards. The wasm admin can migrate the contract.
+
+### Integration notes
+
+- yASTRO is a CW20, so it can't be bridged over IBC without forfeiting its rewards to the bridge escrow.
+- Contracts holding yASTRO (vaults, staking modules, escrows) earn rewards for themselves and must claim and pass them on.
+- Stake and unstake emit `stake` and `unstake` actions rather than CW20 `mint` and `burn`.
+- ASTRO or rewards sent to the contract with a plain bank transfer can't be recovered. yASTRO can't be sent to its own contract.
+
+## InstantiateMsg
+
+The values below are the Terra deployment's configuration.
+
+<CH.Section>
+    <CH.Code>
+
+        ```json json
+        {
+            "owner": "terra1k9j8rcyk87v5jvfla2m9wp200azegjz0eshl7n2pwv852a7ssceqsnn7pq",
+            "astro_denom": "ibc/8D8A7F7253615E5F76CB6252A1E1BD921D5EDB7BBAAF8913FB1C77FF125D9995",
+            "unbonding_period": 604800,
+            "reward_denoms": [
+                "ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B"
+            ],
+            "incentives": "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
+            "min_lp_staked": "0.01",
+            "name": "Staked ASTRO",
+            "symbol": "yASTRO",
+            "decimals": 6,
+            "marketing": {
+                "project": "https://astroport.fi",
+                "description": "Stake ASTRO, earn protocol fees",
+                "marketing": "terra1k9j8rcyk87v5jvfla2m9wp200azegjz0eshl7n2pwv852a7ssceqsnn7pq",
+                "logo": {
+                    "url": "https://..."
+                }
+            }
+        }
+        ```
+
+        ```rust msg.rs
+        #[cw_serde]
+        pub struct InstantiateMsg {
+            pub owner: String,
+            pub astro_denom: String,
+            pub unbonding_period: u64,
+            pub reward_denoms: Vec<String>,
+            pub incentives: Option<String>,
+            pub min_lp_staked: Decimal,
+            pub name: String,
+            pub symbol: String,
+            pub decimals: u8,
+            pub marketing: Option<InstantiateMarketingInfo>,
+        }
+        ```
+
+    </CH.Code>
+
+| **Params**      | **Type** | **Description** |
+| ----------- | ----------- | ----------- |
+| [`owner`](focus://json#2)   | `String`        | Address allowed to change the configuration         |
+| [`astro_denom`](focus://json#3)   | `String`        | The denom staked for yASTRO, 1:1         |
+| [`unbonding_period`](focus://json#4)   | `u64`        | Seconds between unstaking and being able to withdraw. At most 28 days         |
+| [`reward_denoms`](focus://json#5:7)   | `Vec<String>`        | Denoms `deposit_rewards` accepts. Can't include `astro_denom`         |
+| [`incentives`](focus://json#8)   | `Option<String>`        | Astroport Incentives, for forwarding pools' rewards to their LP stakers         |
+| [`min_lp_staked`](focus://json#9)   | `Decimal`        | Share of a pool's LP supply that must be staked in Incentives before its rewards are forwarded. At most 1         |
+| [`name`](focus://json#10)   | `String`        | CW20 name         |
+| [`symbol`](focus://json#11)   | `String`        | CW20 symbol         |
+| [`decimals`](focus://json#12)   | `u8`        | CW20 decimals         |
+| [`marketing`](focus://json#13:20)   | `Option<InstantiateMarketingInfo>`        | Project, description, logo, and the address that can update them         |
+
+</CH.Section>
+
+## ExecuteMsg
+
+### `stake`
+
+Stakes the attached ASTRO for the same amount of yASTRO, minted to `recipient` (default: the sender). Anyone can call it. Attach only ASTRO.
+
+<CH.Section>
+    <CH.Code>
+
+        ```json json
+        {
+            "stake": {
+                "recipient": "terra1..."
+            }
+        }
+        ```
+
+        ```rust msg.rs
+        Stake {
+            recipient: Option<String>,
+        },
+        ```
+
+    </CH.Code>
+
+| **Params**      | **Type** | **Description** |
+| ----------- | ----------- | ----------- |
+| [`recipient`](focus://json#3)   | `Option<String>`        | Receives the yASTRO. Defaults to the sender         |
+
+</CH.Section>
+
+### `unstake`
+
+Burns `amount` of the sender's yASTRO and starts its unbonding. The ASTRO can be withdrawn after the unbonding period (7 days). Unbonding ASTRO earns nothing. Fails if the sender already has 30 open unbondings.
+
+<CH.Section>
+    <CH.Code>
+
+        ```json json
+        {
+            "unstake": {
+                "amount": "1000000"
+            }
+        }
+        ```
+
+        ```rust msg.rs
+        Unstake {
+            amount: Uint128,
+        },
+        ```
+
+    </CH.Code>
+
+| **Params**      | **Type** | **Description** |
+| ----------- | ----------- | ----------- |
+| [`amount`](focus://json#3)   | `Uint128`        | The amount of yASTRO to burn         |
+
+</CH.Section>
+
+### `withdraw`
+
+Sends the sender every unbonding that has matured. Fails if nothing has matured yet.
+
+```json
+{
+    "withdraw": {}
+}
+```
+
+### `deposit_rewards`
+
+Queues the attached reward tokens to stream to yASTRO holders over the next epoch. Anyone can call it; only the accepted reward denoms can be attached. The Terra Maker calls it every week with its yASTRO leg.
+
+```json
+{
+    "deposit_rewards": {}
+}
+```
+
+### `claim`
+
+Sends the sender's accrued rewards to `recipient` (default: the sender). Fails if there is nothing to claim.
+
+<CH.Section>
+    <CH.Code>
+
+        ```json json
+        {
+            "claim": {
+                "recipient": "terra1..."
+            }
+        }
+        ```
+
+        ```rust msg.rs
+        Claim {
+            recipient: Option<String>,
+        },
+        ```
+
+    </CH.Code>
+
+| **Params**      | **Type** | **Description** |
+| ----------- | ----------- | ----------- |
+| [`recipient`](focus://json#3)   | `Option<String>`        | Receives the rewards. Defaults to the sender         |
+
+</CH.Section>
+
+### `claim_for`
+
+Sends `address`'s accrued rewards to `address` itself. Anyone can call it, but only for holders that enabled it with `set_claim_for`.
+
+```json
+{
+    "claim_for": {
+        "address": "terra1..."
+    }
+}
+```
+
+### `set_claim_for`
+
+Lets anyone send the sender its rewards with `claim_for` (`enabled: true`), or stops it (`enabled: false`).
+
+```json
+{
+    "set_claim_for": {
+        "enabled": true
+    }
+}
+```
+
+### `forward_pool_rewards`
+
+Moves a pool's accrued rewards into Incentives for that pool's LP stakers, as a schedule lasting until the next Monday plus one week. Anyone can call it. See [Pools](#pools) for the requirements.
+
+```json
+{
+    "forward_pool_rewards": {
+        "pool": "terra1..."
+    }
+}
+```
+
+### CW20 messages
+
+yASTRO supports the standard CW20 messages. Every balance change settles both sides' rewards first.
+
+| Message | Who |
+| :-- | :-- |
+| `transfer { recipient, amount }` | holder |
+| `send { contract, amount, msg }` | holder |
+| `increase_allowance { spender, amount, expires? }`, `decrease_allowance { spender, amount, expires? }` | holder |
+| `transfer_from { owner, recipient, amount }`, `send_from { owner, contract, amount, msg }` | spender with an allowance |
+| `update_marketing { project?, description?, marketing? }`, `upload_logo` | marketing address |
+
+### `update_config`
+
+Owner only. Leaves unset fields as they are.
+
+<CH.Section>
+    <CH.Code>
+
+        ```json json
+        {
+            "update_config": {
+                "add_reward_denoms": [],
+                "remove_reward_denoms": [],
+                "unbonding_period": 604800,
+                "incentives": "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
+                "min_lp_staked": "0.01"
+            }
+        }
+        ```
+
+        ```rust msg.rs
+        UpdateConfig {
+            add_reward_denoms: Option<Vec<String>>,
+            remove_reward_denoms: Option<Vec<String>>,
+            unbonding_period: Option<u64>,
+            incentives: Option<String>,
+            min_lp_staked: Option<Decimal>,
+        },
+        ```
+
+    </CH.Code>
+
+| **Params**      | **Type** | **Description** |
+| ----------- | ----------- | ----------- |
+| [`add_reward_denoms`](focus://json#3)   | `Option<Vec<String>>`        | Denoms to accept as rewards. At most 5 denoms ever, never ASTRO         |
+| [`remove_reward_denoms`](focus://json#4)   | `Option<Vec<String>>`        | Stops accepting these. Rewards already deposited still stream and stay claimable         |
+| [`unbonding_period`](focus://json#5)   | `Option<u64>`        | Applies to unbondings started after the change. At most 28 days         |
+| [`incentives`](focus://json#6)   | `Option<String>`        | The Incentives contract pool rewards are forwarded to         |
+| [`min_lp_staked`](focus://json#7)   | `Option<Decimal>`        | At most 1         |
+
+</CH.Section>
+
+### `propose_new_owner`, `drop_ownership_proposal`, `claim_ownership`
+
+The usual two-step ownership transfer: the owner proposes a new owner with an expiry (`{"propose_new_owner":{"owner":"terra1...","expires_in":86400}}`) or drops the proposal, and the proposed owner claims ownership.
+
+## QueryMsg
+
+### `config`
+
+<CH.Section>
+    <CH.Code>
+
+        ```json json
+        {
+            "owner": "terra1k9j8rcyk87v5jvfla2m9wp200azegjz0eshl7n2pwv852a7ssceqsnn7pq",
+            "astro_denom": "ibc/8D8A7F7253615E5F76CB6252A1E1BD921D5EDB7BBAAF8913FB1C77FF125D9995",
+            "unbonding_period": 604800,
+            "incentives": "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
+            "min_lp_staked": "0.01"
+        }
+        ```
+
+        ```rust state.rs
+        #[cw_serde]
+        pub struct Config {
+            pub owner: Addr,
+            pub astro_denom: String,
+            pub unbonding_period: u64,
+            pub incentives: Option<Addr>,
+            pub min_lp_staked: Decimal,
+        }
+        ```
+
+    </CH.Code>
+
+Query with `{"config":{}}`. The response is the live Terra configuration.
+
+</CH.Section>
+
+### `pending_rewards`
+
+Rewards an address can claim right now, as a list of coins.
+
+<CH.Section>
+    <CH.Code>
+
+        ```json json
+        {
+            "pending_rewards": {
+                "address": "terra1..."
+            }
+        }
+        ```
+
+        ```json response
+        [
+            {
+                "denom": "ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B",
+                "amount": "1234"
+            }
+        ]
+        ```
+
+    </CH.Code>
+</CH.Section>
+
+### `unbondings`
+
+An address's open unbondings. `release_at` is the time, in seconds, after which `withdraw` sends it.
+
+<CH.Section>
+    <CH.Code>
+
+        ```json json
+        {
+            "unbondings": {
+                "address": "terra1..."
+            }
+        }
+        ```
+
+        ```rust state.rs
+        #[cw_serde]
+        pub struct Unbonding {
+            pub amount: Uint128,
+            pub release_at: u64,
+        }
+        ```
+
+    </CH.Code>
+</CH.Section>
+
+### `reward_state`
+
+One entry per reward denom ever deposited.
+
+<CH.Section>
+    <CH.Code>
+
+        ```json json
+        [
+            {
+                "denom": "ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B",
+                "index": "0",
+                "rate": "0",
+                "epoch_end": 1794182400,
+                "queued": "3317816",
+                "total_deposited": "3317816",
+                "accepted": true
+            }
+        ]
+        ```
+
+        ```rust msg.rs
+        #[cw_serde]
+        pub struct RewardState {
+            pub denom: String,
+            pub index: Decimal256,
+            pub rate: Decimal256,
+            pub epoch_end: u64,
+            pub queued: Decimal256,
+            pub total_deposited: Uint128,
+            pub accepted: bool,
+        }
+        ```
+
+    </CH.Code>
+
+| **Params**      | **Type** | **Description** |
+| ----------- | ----------- | ----------- |
+| [`denom`](focus://json#3)   | `String`        | The reward denom         |
+| [`index`](focus://json#4)   | `Decimal256`        | Reward per yASTRO paid out so far         |
+| [`rate`](focus://json#5)   | `Decimal256`        | Paid out per second until `epoch_end`, shared by all yASTRO         |
+| [`epoch_end`](focus://json#6)   | `u64`        | When the current epoch ends         |
+| [`queued`](focus://json#7)   | `Decimal256`        | Streams over the next epoch         |
+| [`total_deposited`](focus://json#8)   | `Uint128`        | Everything ever deposited         |
+| [`accepted`](focus://json#9)   | `bool`        | Whether `deposit_rewards` still accepts it         |
+
+Query with `{"reward_state":{}}`. The example is the state on 2026-11-04, after the first deposit: it is queued and starts streaming at the next epoch.
+
+</CH.Section>
+
+### `claim_for_enabled`
+
+Whether `claim_for` can pay out `address`. Returns a `bool`.
+
+```json
+{
+    "claim_for_enabled": {
+        "address": "terra1..."
+    }
+}
+```
+
+### `staking_state`
+
+<CH.Section>
+    <CH.Code>
+
+        ```json json
+        {
+            "total_staked": "49057913161684",
+            "total_unbonding": "1011000000"
+        }
+        ```
+
+        ```rust msg.rs
+        #[cw_serde]
+        pub struct StakingState {
+            pub total_staked: Uint128,
+            pub total_unbonding: Uint128,
+        }
+        ```
+
+    </CH.Code>
+
+| **Params**      | **Type** | **Description** |
+| ----------- | ----------- | ----------- |
+| [`total_staked`](focus://json#2)   | `Uint128`        | yASTRO supply, which is the ASTRO staked         |
+| [`total_unbonding`](focus://json#3)   | `Uint128`        | ASTRO in unbonding         |
+
+Query with `{"staking_state":{}}`.
+
+</CH.Section>
+
+### CW20 queries
+
+`balance { address }`, `token_info {}`, `minter {}` (always empty: yASTRO is only minted by staking), `allowance { owner, spender }`, `all_allowances { owner, start_after?, limit? }`, `all_spender_allowances { spender, start_after?, limit? }`, `all_accounts { start_after?, limit? }`, `marketing_info {}` and `download_logo {}`.
+
+```json
+{
+    "balance": {
+        "address": "terra1..."
+    }
+}
+```

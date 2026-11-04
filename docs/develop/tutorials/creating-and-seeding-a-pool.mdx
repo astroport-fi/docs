@@ -6,412 +6,156 @@ import Admonition from '@theme/Admonition'
 
 # Creating and Seeding a Pool
 
-This tutorial will walk you step-by-step through creating and seeding pairs on Astroport. It covers:
+## Overview
 
-- **Creating a Pair**: Learn how to initialize new trading pairs within liquidity pools, enabling fresh trading opportunities.
-- **Fetching Pool Information**: Acquire the necessary skills to programmatically query and retrieve essential data about liquidity pools, including the pool address.
-- **Increasing Token Allowance**: Implement token allowance mechanics, allowing smart contracts to interact with tokens on your behalf.
-- **Providing Liquidity**: Understand and apply techniques to inject liquidity into trading pools.
+This tutorial creates a new pool with [CosmJS](https://github.com/cosmos/cosmjs) and makes the first deposit into it. It covers:
 
+- **Creating a pair** through the factory.
+- **Finding the pool address** and its LP token.
+- **Approving CW20 tokens** (only if one of the assets is a CW20).
+- **Providing the first liquidity**, which sets the pool's starting price.
+
+The example creates an xyk pool on Neutron for a tokenfactory token against NTRN. The same steps work on Terra with the Terra factory, Terra denoms and the Terra wallet settings shown below. For the other pool types and their `init_params`, see [Creating a Pair](farming/creating-a-pair).
+
+| Chain | Factory |
+| ----- | ------- |
+| Terra | `terra14x9fr055x5hvr48hzy2t4q7kvjvfttsvxusa4xsdcy702mnzsvuqprer8r` |
+| Neutron | `neutron1hptk0k5kng7hjy35vmh009qd5m6l33609nypgf2yc6nqnewduqasxplt4e` |
 
 <Admonition type="info" title="NOTE">
-    This tutorial is applicable for creating and seeding pools on the Sei, Neutron, and Terra networks. It is currently not compatible with Injective due to the incompatibility of Injective transactions with CosmJs. A separate tutorial will be needed for handling transactions on the Injective network. 
+
+This tutorial reads the mnemonic from an environment variable to keep the example short. Use proper key management for anything beyond testing, and never commit a mnemonic.
+
 </Admonition>
 
-## Setup 
+## Setup
 
-### Step 1: Import Necessary Libraries
+### Step 1: Import the Libraries
 
-Import the required libraries to connect to the chain and perform transactions.
-
-<CH.Section>
-    <CH.Code>
-
-        ```js
-        import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
-        import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
-        import { GasPrice } from "@cosmjs/stargate";
-
-        ```
-    </CH.Code>
-</CH.Section>
+```js
+import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
+import { GasPrice } from "@cosmjs/stargate";
+```
 
 ### Step 2: Define Constants
 
-Specify the required constants, such as the RPC URL, mnemonic, and factory contract address.
-
-<Admonition type="info" title="NOTE">
-    This tutorial includes the mnemonic directly in the code for quick setup. While convenient for testing, this exposes a sensitive piece of information and is not secure for production use. Always follow secure key management practices and never expose the mnemonic in real-world scenarios.
-</Admonition>
-
-<CH.Section>
-    <CH.Code>
-
-        ```js
-        const rpc = '<rpc-url>'
-        const mnemonic = ''
-        const factoryContractAddress = 'sei1cp0hjmhwn9mz8rd4t29zjx2sks5mlxsjzhch2ef3yr4q2ssqwuvst5lyc9' // sei testnet
-        ```
-    </CH.Code>
-</CH.Section>
-
-### Step 3: Create a Wallet
-
-Create a wallet using the mnemonic for the specific chain prefix.
-
-<CH.Section>
-    <CH.Code>
-
-        ```js
-        const wallet = await DirectSecp256k1HdWallet.fromMnemonic(
-            mnemonic, { 
-                prefix: "sei" // neutron, or terra
-            });
-        ```
-    </CH.Code>
-</CH.Section>
-
-### Step 4: Retrieve Wallet Address
-
-Get the wallet address from the wallet.
-
-<CH.Section>
-    <CH.Code>
-
-        ```js
-        const firstAccount = await wallet.getAccounts();
-        const walletAddress = firstAccount[0].address
-
-        ```
-    </CH.Code>
-</CH.Section>
-
-### Step 5: Set Up the Signing Client
-Configure the signing client for connecting to the chain.
-
-<CH.Section>
-    <CH.Code>
-
-        ```js
-        const signingClient = await SigningCosmWasmClient.connectWithSigner(
-            rpc, 
-            wallet, 
-            { gasPrice: GasPrice.fromString("0.1usei") }
-        )
-        ```
-    </CH.Code>
-</CH.Section>
-
-### Step 6: Wrap Code Inside an Async Function with Error Handling
-
-Wrap the code inside a start() function, marked as async, to handle the asynchronous operations throughout the code. Also, include a try/catch block for robust error handling. This structure enables the use of await with async functions and ensures proper management of any errors that may occur.
-
-<CH.Section>
-    <CH.Code>
-
-        ```js
-        const start = async () => {
-            try {
-                // Place all the code inside this try block
-
-                // ...
-
-            } catch (error) {
-                console.error('An error occurred:', error);
-            }
-        }
-
-        start();
-        ```
-    </CH.Code>
-</CH.Section>
-
-## Create an XYK Pair
-
-### Step 1: Define the Create XYK Pair Message
-
-Create the create xyk pair message with asset details.
-
-<CH.Section>
-    <CH.Code>
-
-        ```js
-        const createXYKPairMsg = {
-            "create_pair": {
-                "pair_type": {
-                    "xyk": {}
-                },
-                "asset_infos": [
-                    {
-                        "token": {
-                            "contract_addr": "<cw20-contract-address>"
-                        }
-                    },
-                    {
-                        "native_token": {
-                            "denom": "usei"
-                        }
-                    }
-                ]
-            }
-        };
-        ```
-    </CH.Code>
-</CH.Section>
-
-### Step 2: Execute the Create XYK Pair Transaction
-
-Execute the create xyk pair transaction.
-
-<CH.Section>
-    <CH.Code>
-
-        ```js
-        const executeCreateXYKPair = await signingClient.execute(
-            walletAddress,
-            factoryContractAddress,
-            createPairMsg,
-            "auto", // fee
-            "" // memo
-        );
-        
-        console.log(JSON.stringify(executeCreateXYKPair));
-        ```
-    </CH.Code>
-</CH.Section>
-
-## Create a Stableswap Pair
-
-### Step 1: Create an Encoding Function
-
-Define a function that will encode an object into Base64. This function will be used in the next step to encode the `init_params` message.
-
-<CH.Section>
-    <CH.Code>
-
-        ```js
-        let toBase64 = (obj) => {
-            return Buffer.from(JSON.stringify(obj)).toString("base64");
-        };
-        ```
-    </CH.Code>
-</CH.Section>
-
-### Step 2: Define the Create Stable Pair Message
-
-Create the message for creating a stableswap pair, including the encoding of the `init_params` for `amp`.
-
-<CH.Section>
-    <CH.Code>
-
-        ```js
-        const createStablePairMsg = {
-            "create_pair": {
-                "pair_type": {
-                    "stable": {}
-                },
-                "asset_infos": [
-                    {
-                        "token": {
-                            "contract_addr": "<cw20-contract-address>"
-                        }
-                    },
-                    {
-                        "native_token": {
-                            "denom": "ibc/..."
-                        }
-                    }
-                ], 
-                "init_params": toBase64(
-                    {
-                        "amp": 10
-                    }
-                )
-            }
-        };
-        ```
-    </CH.Code>
-</CH.Section>
-
-### Step 3: Execute the Create Stable Pair Transaction
-
-Execute the create stable pair transaction.
-
-<CH.Section>
-    <CH.Code>
-
-        ```js
-        const executeCreateStablePair = await signingClient.execute(
-            walletAddress,
-            factoryContractAddress,
-            createStablePairMsg,
-            "auto", // fee
-            "" // memo
-        );
-        
-        console.log(JSON.stringify(executeCreateStablePair));
-        ```
-    </CH.Code>
-</CH.Section>
-
-## Create a PCL Pair
-
-Coming soon!
-
-## Fetching the Pool Address
-
-### Step 1: Query for Pair Address
-
-Execute a query to fetch the pair address associated with the stableswap pool. The query includes the asset information required to identify the pool.
-
-<CH.Section>
-    <CH.Code>
-
-        ```js
-        const pairQuery = await signingClient.queryContractSmart(
-            factoryContractAddress,
-            {
-                "pair": {
-                    "asset_infos": [
-                        {
-                            "token": {
-                                "contract_addr": "<cw20-contract-address>"
-                            }
-                        },
-                        {
-                            "native_token": {
-                                "denom": "usei"
-                            }
-                        }
-                    ]
-                }
-            }
-        );
-        ```
-    </CH.Code>
-</CH.Section>
-
-### Step 2: Save the Pool Contract Address
-
-Retrieve and save the pool contract address from the query result, so you can use it later in other operations.
-
-<CH.Section>
-    <CH.Code>
-
-        ```js
-        const poolContractAddr = pairQuery.contract_addr
-        ```
-    </CH.Code>
-</CH.Section>
-
-## Increase Token Allowance
-
-Before you can provide liquidity, you will need to increase the token allowance for any CW20 token involved in the pair. This allows the pool contract to access the specified amount of your tokens, facilitating the addition of liquidity.
-
-To learn more about increasing allowances, visit the [CW20 spec](https://github.com/CosmWasm/cw-plus/blob/main/packages/cw20/README.md#messages-1).
-
-### Step 1: Define the Increase Token Allowance Message
-
-You need to define a message that specifies the amount by which to increase the allowance, the address of the spender (in this case, the pool contract address), and an optional expiration setting for the allowance.
-
-<CH.Section>
-    <CH.Code>
-
-        ```js
-        const increaseTokenAllowanceMsg = {
-            "increase_allowance": {
-                "spender": poolContractAddr,
-                "amount": "1000000000000",
-                "expires": {
-                    "never": {}
-                }
-            }  
-        };
-        ```
-    </CH.Code>
-</CH.Section>
-
-### Step 2: Execute the Increase Token Allowance Transaction
-
-Next, you need to send a transaction to execute the allowance increase. This will modify the allowance that the specified spender has over your tokens.
-
-<CH.Section>
-    <CH.Code>
-
-        ```js
-        const executeIncreaseTokenAllowance = await signingClient.execute(
-            walletAddress,
-            "<CW20TokenAddr>",
-            increaseTokenAllowanceMsg,
-            "auto", // fee
-            "" // memo
-        );
-        
-        console.log(JSON.stringify(executeIncreaseTokenAllowance));
-        ```
-    </CH.Code>
-</CH.Section>
-
-## Provide Liquidity
-
-Since this is a new pool without any previous token balance or ratios, you will have the flexibility to provide whatever ratio of tokens you choose for the pair. It's essential to note that the ratio you select will set the initial price for the trading pair in the pool.
-
-Arbitrage traders will eventually resolve any imbalance in price, aligning it with the broader market. However, this also means that initial deposits should be as close as possible to external oracle prices or prevailing market rates. 
-
-### Step 1: Define the Provide Liquidity Message
-
-You must define a message that includes the assets you intend to add to the liquidity pool. These can include CW20 tokens and/or native tokens, along with their corresponding amounts.
-
-<CH.Section>
-    <CH.Code>
-
-        ```js
-        const provideLiquidityMsg = {
-            "provide_liquidity": {
-                "assets": [
-                    {
-                    "info": {
-                        "token": {
-                            "contract_addr": "<cw20-contract-address>"
-                        }
-                    },
-                    "amount": "1000000"
-                    },
-                    {
-                    "info": {
-                        "native_token": {
-                            "denom": "usei"
-                        }
-                    },
-                    "amount": "1000000"
-                    }
-                ],
-            }
-        };
-        ```
-    </CH.Code>
-</CH.Section>
-
-### Step 2: Execute the Provide Liquidity Transaction
-
-After defining the assets, you'll need to execute a transaction to add them to the liquidity pool.
-
-Please note that if you're providing native tokens as part of the liquidity, they will have to be explicitly appended to the transaction message. 
-
-<CH.Section>
-    <CH.Code>
-
-        ```js
-        const executeProvideLiquidity = await signingClient.execute(
-            walletAddress,
-            poolContractAddr,
-            provideLiquidityMsg,
-            "auto", // fee
-            "", // memo
-            [ { denom: "usei", amount: "1000000" } ] // coins to send
-        );
-        
-        console.log(JSON.stringify(executeProvideLiquidity));
-        ```
-    </CH.Code>
-</CH.Section>
+```js
+const rpc = "https://neutron-rpc.polkachu.com";
+const factory = "neutron1hptk0k5kng7hjy35vmh009qd5m6l33609nypgf2yc6nqnewduqasxplt4e";
+const myToken = "factory/neutron1...creator/mytoken"; // the token you created
+```
+
+### Step 3: Create the Wallet and Signing Client
+
+```js
+const wallet = await DirectSecp256k1HdWallet.fromMnemonic(process.env.MNEMONIC, {
+  prefix: "neutron",
+});
+const [{ address: sender }] = await wallet.getAccounts();
+
+const client = await SigningCosmWasmClient.connectWithSigner(rpc, wallet, {
+  gasPrice: GasPrice.fromString("0.0053untrn"),
+});
+```
+
+On Terra, use `prefix: "terra"`, add `hdPaths: [stringToPath("m/44'/330'/0'/0/0")]` (`stringToPath` comes from `@cosmjs/crypto`) and a `uluna` gas price such as `0.015uluna`.
+
+### Step 4: Wrap the Code in an Async Function
+
+```js
+const main = async () => {
+  // Place the code from the next sections here
+};
+
+main().catch((error) => {
+  console.error("An error occurred:", error);
+  process.exit(1);
+});
+```
+
+## Create the Pair
+
+```js
+const assetInfos = [
+  { native_token: { denom: myToken } },
+  { native_token: { denom: "untrn" } },
+];
+
+const createTx = await client.execute(
+  sender,
+  factory,
+  { create_pair: { pair_type: { xyk: {} }, asset_infos: assetInfos } },
+  "auto"
+);
+console.log("Pair created:", createTx.transactionHash);
+```
+
+`create_pair` fails if the factory already has a pool for this asset pair. On Terra, CW20 tokens are written as `{ token: { contract_addr: "terra1..." } }`.
+
+## Find the Pool Address
+
+```js
+const pairInfo = await client.queryContractSmart(factory, {
+  pair: { asset_infos: assetInfos },
+});
+
+const pool = pairInfo.contract_addr;
+const lpToken = pairInfo.liquidity_token; // factory/<pool>/astroport/share on Neutron
+console.log({ pool, lpToken });
+```
+
+## Approve CW20 Tokens (CW20 Assets Only)
+
+If one of the assets is a CW20 token, allow the pool to transfer the amount you will deposit. Skip this for native assets.
+
+```js
+await client.execute(
+  sender,
+  "<cw20-token-address>",
+  { increase_allowance: { spender: pool, amount: "1000000" } },
+  "auto"
+);
+```
+
+See the [CW20 spec](https://github.com/CosmWasm/cw-plus/blob/main/packages/cw20/README.md) for allowances.
+
+## Provide the First Liquidity
+
+The first deposit sets the pool's price: depositing 1,000 MYTOKEN and 500 NTRN starts the pool at 0.5 NTRN per MYTOKEN. Match the market price as closely as you can; any difference is an arbitrage opportunity paid for by your deposit. Part of the first deposit's LP tokens stays locked in the pool.
+
+```js
+const myTokenAmount = "1000000000"; // 1,000 MYTOKEN (6 decimals)
+const ntrnAmount = "500000000";     // 500 NTRN
+
+const provideTx = await client.execute(
+  sender,
+  pool,
+  {
+    provide_liquidity: {
+      assets: [
+        { info: { native_token: { denom: myToken } }, amount: myTokenAmount },
+        { info: { native_token: { denom: "untrn" } }, amount: ntrnAmount },
+      ],
+      auto_stake: false,
+    },
+  },
+  "auto",
+  "",
+  // native funds, sorted by denom ("factory/..." sorts before "untrn")
+  [
+    { denom: myToken, amount: myTokenAmount },
+    { denom: "untrn", amount: ntrnAmount },
+  ]
+);
+console.log("Liquidity provided:", provideTx.transactionHash);
+```
+
+Set `auto_stake: true` to stake the LP tokens in the Incentives contract in the same transaction. Staked LP tokens earn rewards only if the pool has incentive schedules: see [Claiming Rewards](farming/claiming-rewards#where-rewards-come-from) for how to add one.
+
+## Links
+
+- [Creating a Pair](farming/creating-a-pair)
+- [Providing/Withdrawing Liquidity](farming/providing-withdrawing-liquidity)
+- [Creating a Token](creating-a-token/creating-a-token-intro)
+- [Contract Addresses](/docs/develop/smart-contracts/contract-addresses)

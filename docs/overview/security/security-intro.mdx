@@ -1,17 +1,29 @@
 # Security
 
-Using Astroport doesn't come without risk. Before you decide to deposit your assets in the protocol or swap tokens, you should do your research and understand the risks involved. This section will only give an overview of the main risks associated with the Astroport protocol.
+Using Astroport doesn't come without risk. Before you decide to deposit your assets in the protocol or swap tokens, you should do your research and understand the risks involved. This section gives an overview of the main risks associated with the Astroport protocol.
+
+Astroport is in [long-term support](/docs/learn/long-term-support): security fixes are the first priority for the contracts on Terra and Neutron.
+
+## Reporting a vulnerability
+
+Astroport no longer runs a bug bounty. If you find a vulnerability, contact the team on the [Astroport Discord](https://discord.astroport.fi). Don't share details of a vulnerability in public channels.
 
 ## Smart Contract Bugs
 
-The Astroport contracts were audited by [Halborn](https://github.com/astroport-fi/astroport-audits/tree/main/halborn) and [Oak Security](https://github.com/astroport-fi/astroport-audits/tree/main/oak). However, security audits do not completely eliminate smart contract risk. We urge you not to put your life savings or money you can't afford to lose into Astroport.
+The Astroport contracts were audited by [Halborn](https://github.com/astroport-fi/astroport-audits/tree/main/halborn) and [Oak Security](https://github.com/astroport-fi/astroport-audits/tree/main/oak) (see [Audits](./audits)). However, security audits do not completely eliminate smart contract risk. We urge you not to put your life savings or money you can't afford to lose into Astroport.
+
+## Chain Risk
+
+Astroport runs on Terra and Neutron and depends on the security of those chains. In September 2026, a Neutron governance proposal took control of eight Astroport contracts on Neutron and drained ASTRO from xASTRO staking and six pools. The funds were returned after Neutron halted and restarted, but the incident shows that chain-level governance can affect contracts deployed on that chain. See [Long-Term Support](/docs/learn/long-term-support#september-2026-neutron-incident-and-recovery).
+
+## Admin Control
+
+The protocol contracts are owned by the Assembly on Neutron and the satellite on Terra, which are run by the Astroport Contributors DAOs, with emergency multisigs as emergency owners. The owners can change contract settings and migrate contracts. See [Who runs the protocol](/docs/learn/long-term-support#who-runs-the-protocol).
 
 ## Suboptimal Parameters
 
-Governance may set suboptimal parameters for:
+Pool creators and the protocol owners may set suboptimal parameters, for example:
 
-- Amplification parameters for specific pools (e.g LunaX-LUNA where LunaX accrues interest)
-- ASTRO emissions in the Generator contract which can lead to one generator receiving more ASTRO than intended
-- Blacklisting registries, where they blacklist the wrong token from being staked in the Generator contract, leading to that token not receiving any ASTRO emissions until it is whitelisted again
-
-
+- Amplification parameters for specific pools (e.g. pools where one asset accrues interest)
+- PCL pool parameters that don't suit the pair's volatility (see [PCL Parameters](/docs/learn/astro-pools/passive-concentrated-liquidity-pools/pcl-parameters))
+- Fee settings and fee routes in the Maker contracts

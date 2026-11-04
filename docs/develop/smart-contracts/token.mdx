@@ -2,12 +2,38 @@
 sidebar_position: 7
 ---
 
-# Token
+# ASTRO Token
 
 ## Overview
 
-This is the contract implementation for the ASTRO token.
+ASTRO is a tokenfactory denom on Neutron. On Terra, ASTRO is the same token, transferred over IBC from Neutron.
 
-This a basic implementation of a [`cw20-base`](https://github.com/CosmWasm/cw-plus/tree/main/contracts/cw20-base) contract. It implements the [`CW20 spec`](https://github.com/CosmWasm/cw-plus/tree/main/packages/cw20) and is designed to be imported into other contracts in order to easily build cw20-compatible tokens with custom logic.
+| Chain | ASTRO | Notes |
+| :-- | :-- | :-- |
+| Neutron | `factory/neutron1ffus553eet978k024lmssw0czsxwr97mggyv85lpcsdkft8v9ufsz3sa07/astro` | Tokenfactory denom. Its admin is the [ASTRO burner](./tokenomics/astro-burner) |
+| Terra | `ibc/8D8A7F7253615E5F76CB6252A1E1BD921D5EDB7BBAAF8913FB1C77FF125D9995` | Neutron ASTRO over IBC (`transfer/channel-229`) |
 
+## Supply
 
+- ASTRO supply started at 1,000,000,000.
+- The Neutron Treasury burn on 2026-10-08 burned 302,664,416.43 ASTRO.
+- Supply on 2026-11-04 was 696,235,077.66 ASTRO, and it only goes down: Neutron fees and a quarter of Terra fees are bought as ASTRO and burned (see [Maker](./tokenomics/maker)).
+- Minting is impossible in practice. The denom admin is the ASTRO burner contract, which can only burn.
+- There are no ASTRO emissions.
+
+## Legacy ASTRO tokens
+
+ASTRO was first a CW20 token on Terra. It moved to Neutron as a tokenfactory denom, and the old tokens are converted, one way and 1:1, through converter pools (`astroport-pair-converter` 1.1.0). A converter pool holds no liquidity and charges no fee: swapping the old token in it returns new ASTRO released by the ASTRO converter contract behind it, so a conversion only goes through while that converter holds enough new ASTRO. The reverse direction isn't supported.
+
+| Chain | Old token | Converter pool |
+| :-- | :-- | :-- |
+| Terra | ASTRO CW20 [terra1nsuqsk6kh58ulczatwev87ttq2z6r3pusulg9r24mfj2fvtzd4uq3exn26](https://terrasco.pe/mainnet/address/terra1nsuqsk6kh58ulczatwev87ttq2z6r3pusulg9r24mfj2fvtzd4uq3exn26) (`astroport-token` 1.0.0, a `cw20-base` token) | [terra1ala9d5sddzxf8jdgyd9m6s0jkwy5a724938zgwe9zmh5rwtyzzfql59par](https://terrasco.pe/mainnet/address/terra1ala9d5sddzxf8jdgyd9m6s0jkwy5a724938zgwe9zmh5rwtyzzfql59par), returns Terra IBC ASTRO |
+| Neutron | Old IBC ASTRO from Terra `ibc/5751B8BCDA688FD0A8EC0B292EEF1CDEAB4B766B63EC632778B196D317C40C3A` | [neutron12gzdev6htsfvfu9hp220w6zjmf4gruwas4hpadtekpmm666xvpcs4fqucl](https://neutron.celat.one/neutron-1/contracts/neutron12gzdev6htsfvfu9hp220w6zjmf4gruwas4hpadtekpmm666xvpcs4fqucl), returns Neutron ASTRO |
+
+The legacy ASTRO CW20 can't be staked in [yASTRO](./tokenomics/yastro); convert it first.
+
+## Links
+
+- **ASTRO burner:** [neutron1wl7akesary9ac3h5k3mjw3lj5e93pvpwlc8xjh05aug7zgl084gq8xhjxp](https://neutron.celat.one/neutron-1/contracts/neutron1wl7akesary9ac3h5k3mjw3lj5e93pvpwlc8xjh05aug7zgl084gq8xhjxp)
+- **Converter pool repo:** https://github.com/astroport-fi/astroport-core/tree/main/contracts/pair_astro_converter
+- **Converter repo:** https://github.com/astroport-fi/astroport-core/tree/main/contracts/periphery/astro_converter

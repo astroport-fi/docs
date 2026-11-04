@@ -4,39 +4,28 @@ sidebar_position: 3
 
 import Admonition from '@theme/Admonition'
 
-import Terra2AllocationUrl from '@site/static/img/tokenomics/astro-alloc.png';
-import TerraClassicAllocationUrl from '@site/static/img/tokenomics/astroc-alloc.png';
-import EmissionScheduleUrl from '@site/static/img/tokenomics/emission-schedule.png';
+# Supply and Allocation
 
-# Allocation
+## Supply
 
-## Terra 2.0 
+| | ASTRO |
+|---|---|
+| Starting supply | 1,000,000,000 |
+| Burned by the Neutron Treasury burn (2026-10-08) | 302,664,416.43 |
+| Supply on 2026-11-04 | 696,235,077.66 |
 
-There will be a maximum supply of 1.1 billion $ASTRO tokens, to be allocated as illustrated in the chart below:
+The ASTRO supply only goes down:
 
-<img src={Terra2AllocationUrl} style={{ paddingBottom: 15 }} />
+- **Minting has ended.** The admin of the ASTRO denom on Neutron is the ASTRO burner contract ([neutron1wl7akesary9ac3h5k3mjw3lj5e93pvpwlc8xjh05aug7zgl084gq8xhjxp](https://neutron.celat.one/neutron-1/contracts/neutron1wl7akesary9ac3h5k3mjw3lj5e93pvpwlc8xjh05aug7zgl084gq8xhjxp)), which can only burn. No new ASTRO can be created.
+- **Fees burn ASTRO every week.** All of Neutron's protocol fees and 25% of Terra's are used to buy ASTRO, which the burner burns. See [Fees](./fees).
+- **No emissions.** ASTRO emissions to pools have ended.
 
-The token distribution was designed in a way that ensures the wider Terra community will have a majority say in everything that happens with Astroport. After the airdrop, there will be 133M ASTRO in the hands of the community (12% of the total supply) and there is an additional 45% of the supply meant to be distributed to Astroport LPs over 69 years.
+The Neutron Treasury ([neutron19sq60cxtsjcx7vw25c63wyt27fxevuh6l7vxcn04u0t0rueyfpvq4mc75l](https://neutron.celat.one/neutron-1/contracts/neutron19sq60cxtsjcx7vw25c63wyt27fxevuh6l7vxcn04u0t0rueyfpvq4mc75l)) keeps about 60M ASTRO, reserved for future protocol-owned liquidity.
 
-16% of the supply is reserved for the Astral Assembly. The rest is allocated to Astroport Builders who have a 3 year lockup.
+## Historical allocation
 
-{/* <Admonition type="info" title="NOTE">
-There will be a grace period of at least 60 days between the Astroport launch and the activation of the Astral Assembly. This grace period will allow for sufficient distribution of the token amongst airdrop recipients and other token holders.
-</Admonition> */}
+<Admonition type="info" title="Historical">
+This section describes the original ASTRO allocation plan from Astroport's launch on Terra in 2022. It no longer applies: ASTRO emissions to LPs have ended, the Assembly's governance role is retired, and the current supply is shown above.
+</Admonition>
 
-## Terra Classic 
-
-There will be a maximum supply of 1 billion $ASTROC tokens, to be allocated as illustrated in the chart below:
-
-<img src={TerraClassicAllocationUrl} style={{ paddingBottom: 15 }} />
-
-The token distribution was designed in a way that ensures the wider Terra Classic community will have a majority say in everything that happens with Astroport Classic. After the lockdrop, there will be 110M ASTRO in the hands of the community (11% of the total supply) and there is an additional 49% of the supply meant to be distributed to Astroport LPs over 69 years.
-
-10% of the supply is reserved for the Astral Assembly. The rest is allocated to Astroport Builders who have a 3 year lockup.
-
-## Emission Schedule
-
-The emission schedules for $ASTRO and $ASTROC are as follows:
-
-<img src={EmissionScheduleUrl} style={{ }} />
-
+At launch, ASTRO was allocated to an airdrop for the community (12%), liquidity provider emissions (45%), the Astroport Assembly treasury (16%) and the Astroport builders, with a 3-year lockup (27%). Astroport did not have an ICO.

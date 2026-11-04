@@ -2,294 +2,237 @@
 sidebar_position: 2
 ---
 
+import Admonition from '@theme/Admonition'
+
 # Providing/Withdrawing Liquidity
 
-## Overview 
+## Overview
 
-A user can provide liquidity to a pool by calling `provide_liquidity`. Before executing the `provide_liqudity` operation, a user must allow the pool contract to take tokens from their wallet for all CW20 tokens in a given pair.
+You add liquidity to a pool with `provide_liquidity` and receive LP tokens for your share. You get your share of the pool back, including the swap fees it earned, by returning the LP tokens with `withdraw_liquidity`. Swap fees are not paid out separately: the liquidity providers' part of each fee stays in the pool and raises the value of every LP token.
 
-Users can also withdraw liquidity by calling `withdraw_liquidity`. To receive the underlying liquidity back plus accrued LP fees, LPs must burn their liquidity tokens.
+How you send tokens depends on their type:
+
+- **Native tokens** (`uluna`, `untrn`, IBC and tokenfactory denoms) are attached to the message as funds.
+- **CW20 tokens** must first be approved with `increase_allowance` so the pool can transfer them from your wallet.
+- **Native LP tokens** (`factory/<pool address>/astroport/share`) are attached to `withdraw_liquidity` as funds.
+- **CW20 LP tokens** (a `terra1...`/`neutron1...` contract) are sent to the pool with a CW20 `send` that embeds `withdraw_liquidity`.
+
+The pool's `pair` query tells you its assets and its `liquidity_token`. The examples use the Terra LUNA/USDC pool `terra1v3lqxl0eyte9x3nhdgcj8hwvjq76aupnnzz0yll8mxs5cckc29pqvg2scu`, whose LP token is the CW20 `terra1s275y73lfupag0g03nglxaedfnsw5z4m5zc9wk66guy503zuw5ss889tlx`. See [Swapping](../trading/swapping#setup) for the CosmJS client setup.
 
 ## Providing Liquidity
 
-<CH.Section>
-    <CH.Scrollycoding>
+### `increase_allowance` (CW20 assets only)
 
-        ### `increase_allowance`
+If one of the assets is a CW20 token, allow the pool to spend it first. Execute this on the CW20 token contract:
 
-        Before we can provide liquidity to a pool, we need to increase the token allowance for all CW20 tokens in the pair.
+```json
+{
+  "increase_allowance": {
+    "spender": "terra1...pool",
+    "amount": "1000000"
+  }
+}
+```
 
-        The [`increase_allowance`](https://github.com/CosmWasm/cw-plus/blob/main/packages/cw20/README.md#messages-1) endpoint for a given CW20 token contract contains:
-        
-        - A `spender` (the pair address we are depositing to in our example)
-        - The `amount` to increase the allowance by
-        - An optional expiration time
+Approve only what you are about to deposit. Skip this step for native assets.
 
-        ```json
-        {
-          "increase_allowance": {
-            "spender": astrolunaAddress,
-            "amount": "1000000000000",
-            "expires": {
-              "never": {}
-            }
+### `provide_liquidity`
+
+Execute on the pool. `assets` lists each asset and the amount to deposit, in base units.
+
+```json
+{
+  "provide_liquidity": {
+    "assets": [
+      {
+        "info": {
+          "native_token": {
+            "denom": "uluna"
           }
-        }
-        ```
-
-        ---
-
-        ### `provide_liquidity`
-
-        To provide liquidity, you need to execute a contract message pointing to the [`provide_liquidity`](../../smart-contracts/swap-pairs/constant-product-pools#provide_liquidity) endpoint in the [`pair`](../../smart-contracts/swap-pairs/constant-product-pools) contract for the selected pool. 
-
-        `assets` is the only required parameter and contains information about each token in the pair, including the contract address or native denomination and the amount to deposit. 
-
-        For new pools, you can deposit any ratio of tokens in a pair. For existing pairs, the contract will throw an error message if the proper balance of ratios between tokens is not met.
-
-        ```json
-        {
-          "provide_liquidity": {
-            "assets": [
-              {
-                "info": {
-                  "token": {
-                    "contract_addr": astroAddress
-                  }
-                },
-                "amount": beliefPrice
-              },
-              {
-                "info": {
-                  "native_token": {
-                    "denom": "uluna"
-                  }
-                },
-                "amount": "500000"
-              }
-            ],
-            "slippage_tolerance": "0.005",
-            "auto_stake": false, 
-            "receiver": "..."
+        },
+        "amount": "25812000"
+      },
+      {
+        "info": {
+          "native_token": {
+            "denom": "ibc/2C962DAB9F57FE0921435426AE75196009FAA1981BF86991203C8411F8980FDB"
           }
-        }
-        ```
+        },
+        "amount": "1000000"
+      }
+    ],
+    "slippage_tolerance": "0.01",
+    "auto_stake": false
+  }
+}
+```
 
-        ---
+| Parameter | Type | Description |
+| --------- | ---- | ----------- |
+| `assets` | `Vec<Asset>` | The assets and amounts to deposit |
+| `slippage_tolerance` | `Option<Decimal>` | How far the deposit ratio may differ from the pool's ratio (default `0.005`, max `0.5`) |
+| `auto_stake` | `Option<bool>` | Stake the minted LP tokens in the Incentives contract in the same transaction |
+| `receiver` | `Option<String>` | Recipient of the LP tokens, if not the sender |
+| `min_lp_to_receive` | `Option<Uint128>` | Fail if fewer LP tokens would be minted. Supported by current pool versions |
 
-        #### Optional Parameters
+Attach every native asset in `assets` as funds, with exactly the amounts in the message:
 
-        `provide_liqudity` takes up the following optional parameters: 
+```js
+const pool = "terra1v3lqxl0eyte9x3nhdgcj8hwvjq76aupnnzz0yll8mxs5cckc29pqvg2scu";
+const usdc = "ibc/2C962DAB9F57FE0921435426AE75196009FAA1981BF86991203C8411F8980FDB";
 
-        - `slippage_tolerance`: Allows liquidity provision while the price of assets in a pool stays within a certain range
-        - `auto_stake`: Determines whether the LP tokens minted for the user are auto staked in the Generator contract.
-        - `receiver`: The receiver of LP tokens (if different from sender)
+const lunaAmount = "25812000";
+const usdcAmount = "1000000";
 
+const result = await signingClient.execute(
+  sender,
+  pool,
+  {
+    provide_liquidity: {
+      assets: [
+        { info: { native_token: { denom: "uluna" } }, amount: lunaAmount },
+        { info: { native_token: { denom: usdc } }, amount: usdcAmount },
+      ],
+      slippage_tolerance: "0.01",
+      auto_stake: false,
+    },
+  },
+  "auto",
+  "",
+  // funds: native assets, sorted by denom
+  [
+    { denom: usdc, amount: usdcAmount },
+    { denom: "uluna", amount: lunaAmount },
+  ]
+);
+```
 
+Cosmos SDK transactions expect the funds list sorted by denom (`ibc/...` sorts before `uluna`).
 
-        ```json focus=21:23
-        ```
+### Choosing the Amounts
 
-        ---
+Deposit in the pool's current ratio. Read the balances with the `pool` query:
 
-        #### `Coins`
+```json
+{
+  "pool": {}
+}
+```
 
-        If the pair you are providing liquidity to contains a native asset, you will also need to send the native token along with the transaction message. 
+```json
+{
+  "assets": [
+    {
+      "info": { "native_token": { "denom": "uluna" } },
+      "amount": "189487604110"
+    },
+    {
+      "info": { "native_token": { "denom": "ibc/2C962DAB9F57FE0921435426AE75196009FAA1981BF86991203C8411F8980FDB" } },
+      "amount": "7341290743"
+    }
+  ],
+  "total_share": "34453629166"
+}
+```
 
-        The code in this section is an example of what a `provide_liquidity` message may look like using [feather.js](../network/terra-2#featherjs) to send Coins with our transaction.
+For 1 USDC (`1000000`), the matching LUNA amount is `1000000 * 189487604110 / 7341290743 = 25811210` (rounded down), so a deposit of about 25.81 LUNA. In constant product pools, a deposit whose ratio differs from the pool's by more than `slippage_tolerance` fails. Stableswap and PCL pools accept unbalanced deposits but charge a fee on the imbalanced part. Current pool versions also answer `simulate_provide` with the LP amount a deposit would mint.
 
-        ```js
-        const astroAddress = 'terra167dsqkh2alurx997wmycw9ydkyu54gyswe3ygmrs4lwume3vmwks8ruqnv';
+The first deposit into an empty pool sets its price, so make it at the market price. Current pool versions keep a small amount of LP tokens from the first deposit locked in the pool.
 
-        const provideLiquidity = new MsgExecuteContract(
-          wallet.key.accAddress('terra'),
-          astrolunaAddress,
-          {
-            "provide_liquidity": {
-              "assets": [
-                {
-                  "info": {
-                    "token": {
-                      "contract_addr": astroAddress
-                    }
-                  },
-                  "amount": beliefPrice
-                },
-                {
-                  "info": {
-                    "native_token": {
-                      "denom": "uluna"
-                    }
-                  },
-                  "amount": "500000"
-                }
-              ],
-              "slippage_tolerance": "0.005",
-              "auto_stake": false
-            }
-          }, 
-          new Coins({ "uluna": "500000" })
-        );
+## Withdrawing Liquidity
 
+`withdraw_liquidity` burns your LP tokens and returns your share of every asset in the pool. Optional `min_assets_to_receive` makes the withdrawal fail if you would receive less of any asset.
 
-        const fee = new Fee(2000000, { uluna: 200000 });
+To see what you would get back, query `share` with an LP amount (all pool versions) or `simulate_withdraw` (current versions):
 
-        const tx = await wallet.createAndSignTx({
-          msgs: [provideLiquidity],
-          fee,
-          chainID: 'pisco-1',
-        });
+```json
+{
+  "share": {
+    "amount": "1000000"
+  }
+}
+```
 
-        const result = await lcd.tx.broadcast(tx, 'pisco-1');
+If your LP tokens are staked in Incentives, unstake them first: see [Staking/Unstaking LP Tokens](staking-unstaking-lp-tokens).
 
-        console.log(result);
-        ```
+### Native LP Tokens
 
-        ---
+Attach the LP tokens to `withdraw_liquidity` on the pool:
 
-        ### Calculating Deposit Amount
+```json
+{
+  "withdraw_liquidity": {}
+}
+```
 
-        As noted above, the contract will throw an error message if the proper balance of ratios between tokens is not met.
+```js
+const lpDenom = "factory/neutron1...pool/astroport/share";
 
-        In order to obtain the ratio of tokens that we need, we can simulate a swap and input our response as the `amount` for one of our deposits. 
+await signingClient.execute(
+  sender,
+  "neutron1...pool",
+  { withdraw_liquidity: {} },
+  "auto",
+  "",
+  [{ denom: lpDenom, amount: "1000000" }]
+);
+```
 
-        ```json
-        {
-          "provide_liquidity": {
-            "assets": [
-              {
-                "info": {
-                  "token": {
-                    "contract_addr": astroAddress
-                  }
-                },
-                "amount": beliefPrice
-              },
-              {
-                "info": {
-                  "native_token": {
-                    "denom": "uluna"
-                  }
-                },
-                "amount": "500000"
-              }
-            ],
-            "slippage_tolerance": "0.005",
-            "auto_stake": false
-          }
-        }
-        ```
+### CW20 LP Tokens
 
-        ---
+Send the LP tokens to the pool with a `send` on the LP token contract. The `msg` is the base64 encoding of `{"withdraw_liquidity":{}}`.
 
-        #### `simulation`
+```json
+{
+  "send": {
+    "contract": "terra1v3lqxl0eyte9x3nhdgcj8hwvjq76aupnnzz0yll8mxs5cckc29pqvg2scu",
+    "amount": "1000000",
+    "msg": "eyJ3aXRoZHJhd19saXF1aWRpdHkiOnt9fQ=="
+  }
+}
+```
 
-        The [`simulation`](../../smart-contracts/swap-pairs/constant-product-pools#simulation) endpoint contains information about our offer asset and the amount to swap. 
+```js
+import { toBinary } from "@cosmjs/cosmwasm-stargate";
 
-        Our input `amount` and response will gives us the proper ratio of tokens that we need to `provide_liquidity`. 
+const lpToken = "terra1s275y73lfupag0g03nglxaedfnsw5z4m5zc9wk66guy503zuw5ss889tlx";
 
-        ```json
-        {
-          "simulation": {
-            "offer_asset": {
-              "info": {
-                "native_token": {
-                  "denom": "uluna"
-                }
-              },
-              "amount": "500000"
-            }
-          }
-        }
-        ```
+await signingClient.execute(
+  sender,
+  lpToken, // the LP token contract
+  {
+    send: {
+      contract: pool,
+      amount: "1000000",
+      msg: toBinary({ withdraw_liquidity: {} }),
+    },
+  },
+  "auto"
+);
+```
 
-        ---
+## Withdraw-only (Exit-only) Pools
 
-    </CH.Scrollycoding>
-</CH.Section>
+Six Neutron pools drained on 2026-09-22 were refilled with the returned assets and migrated to `astroport-pair-exit-only`. They accept balanced withdrawals only:
 
+- `withdraw_liquidity` pays your share of every asset the pool holds, rounded down, and burns your LP tokens. `min_assets_to_receive` is enforced.
+- One-sided withdrawals (naming `assets`), deposits and swaps are refused.
+- Only the `pair`, `pool`, `share` and `simulate_withdraw` queries work.
+- LP tokens staked in Incentives must be unstaked first.
 
-## Withdrawing Liquidity 
+| Pool | Address | LP token |
+| ---- | ------- | -------- |
+| dATOM/USDC | `neutron1nfns3ck2ykrs0fknckrzd9728cyf77devuzernhwcwrdxw7ssk2s3tjf8r` | native |
+| NTRN/USDC | `neutron18c8qejysp4hgcfuxdpj4wf29mevzwllz5yh8uayjxamwtrs0n9fshq9vtv` | native |
+| dATOM/ATOM | `neutron1yem82r0wf837lfkwvcu2zxlyds5qrzwkz8alvmg0apyrjthk64gqeq2e98` | native |
+| USDC/DYDX | `neutron1j4xpv03fw664mvntlhqnzp5hjqk2nfw00vrgx9qlq97rxc9fu3lqvmszl2` | CW20 |
+| wstETH/WETH | `neutron1yw0a7nxa8jdgzmdsme4gwxhj76n44z305qgwrzvlfavgna9epcys3k9m2f` | CW20 |
+| axlUSDC/USDC | `neutron1ns2tcunrlrk5yk62fpl74ycazanceyfmmq7dlj6sq8n0rnkuvk7szstkyx` | CW20 |
 
-<CH.Section>
-    <CH.Scrollycoding>
+Withdraw from them exactly as above: attach native LP tokens to `withdraw_liquidity {}`, or `send` CW20 LP tokens with `{"withdraw_liquidity":{}}`.
 
-        ### `withdraw_liquidity`
+## Links
 
-        To [`withdraw_liquidity`](../../smart-contracts/swap-pairs/constant-product-pools#withdraw_liquidity), you need to execute a contract message pointing to the `send` endpoint in the CW20 contract of the LP token associated with the pair. 
-
-        send includes the contract the tokens are being sent to (pair contract address), the amount to send (withdraw), and a binary encoded msg containing our contract call (`withdraw: {}`).
-
-        ```json
-        {
-          "send": {
-            "contract": astrolunaAddress,
-            "amount": "10000000",
-            "msg": toBase64(
-              {
-                "withdraw_liquidity": {}
-              }
-            )
-          }
-        }
-        ```
-        ---
-
-        ### Encoding our `Msg`
-
-        To encode our message, there are two common options:
-
-        - An [online base64 encoder](https://www.base64encode.org/)
-        - A custom function
-
-        The code in this section uses a custom function (`toBase64`) to display our binary message - this function needs to be defined elsewhere to be used. The actual string representation of our message would be an encoded binary.
-
-        ```json focus=5:9
-        ```
-
-        ---
-
-        #### `toBase64`
-
-        The code in this section is an example of a `withdraw_liquidity` message using [feather.js](../network/terra-2#featherjs) to define our custom function and encode our message.
-
-        ```js
-        const astrolunaAddress = 'terra1udsua9w6jljwxwgwsegvt6v657rg3ayfvemupnes7lrggd28s0wq7g8azm';
-        const astrolunaLPAddress = 'terra1886vn036tc9e7ejx8pe4nkhts3gwpdfegwc4n3u77n0q76fjdthqarl8uc';
-        
-        const toBase64 = (obj) => {
-          return Buffer.from(JSON.stringify(obj)).toString("base64");
-        };
-
-        const withdraw = new MsgExecuteContract(
-          wallet.key.accAddress('terra'),
-          astrolunaLPAddress,
-          {
-            "send": {
-              "contract": astrolunaAddress,
-              "amount": "10000000",
-              "msg": toBase64(
-                {
-                  "withdraw_liquidity": {}
-                }
-              )
-            }
-          }
-        )
-
-        const fee = new Fee(2000000, { uluna: 200000 });
-
-        // // BROADCAST TRANSACTION
-        const tx = await wallet.createAndSignTx({
-          msgs: [withdraw],
-          fee,
-          chainID: 'pisco-1',
-        });
-
-        const result = await lcd.tx.broadcast(tx, 'pisco-1');
-
-        console.log(result);
-        ```
-
-    </CH.Scrollycoding>
-</CH.Section>
+- [Pool contracts](/docs/develop/smart-contracts/swap-pairs/swap-pairs-intro)
+- [Staking/Unstaking LP Tokens](staking-unstaking-lp-tokens)
+- [Exit-only pair contract](https://github.com/astroport-fi/astroport-core/tree/main/contracts/pair_exit_only)

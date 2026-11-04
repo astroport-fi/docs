@@ -2,47 +2,73 @@
 sidebar_position: 3
 ---
 
+import Admonition from '@theme/Admonition'
+
 # Factory
 
 ## Overview
 
-The factory contract can create new Astroport pair contracts (and associated LP token contracts) which are tracked in a registry and used as a directory for all pairs. The default pair types are constant product and stableswap but governance may decide to add custom pools that can have any implementation.
+The factory creates new Astroport pools (and their LP tokens) and keeps the registry of pools, one per set of assets. It also holds the configuration of every pool type it can create: the code ID, the fees and whether anyone can create that type.
+
+The factory owner is the protocol owner on each chain: the satellite ("Astroport Assembly") on Terra and the Assembly on Neutron, both run by the Astroport Contributors DAO (see [Access Controls and Permissions](./access-controls-and-permissions.mdx)). Only the owner can change the configuration or deregister pools.
+
+Pool types and fees configured on mainnet (2026-11-04):
+
+| Pair type | Terra (factory 1.8.0) | Neutron (factory 1.9.0) |
+| ----------- | ----------- | ----------- |
+| `{"xyk": {}}` | 30 bps, 1/3 to Maker (`maker_fee_bps` 3333) | 30 bps, 1/3 to Maker |
+| `{"stable": {}}` | 5 bps, 1/2 to Maker (5000) | 5 bps, 1/2 to Maker |
+| `{"custom": "concentrated"}` (PCL) | Fee set per pool by its parameters, 1/2 to Maker | Same |
+| Concentrated with Duality orderbook | n/a | Fee set per pool, 1/2 to Maker |
+| Transmuter | Permissioned, no fees | Permissioned |
+| xASTRO pair (xASTRO is retired) | n/a | Permissioned, can't be incentivized |
+| XYK with sale tax | n/a | Disabled |
 
 ## Links
 
-- **Contract Address:** [terra14x9fr055x5hvr48hzy2t4q7kvjvfttsvxusa4xsdcy702mnzsvuqprer8r](https://terrasco.pe/mainnet/address/terra14x9fr055x5hvr48hzy2t4q7kvjvfttsvxusa4xsdcy702mnzsvuqprer8r)
-- **Testnet Address**: [terra1z3y69xas85r7egusa0c7m5sam0yk97gsztqmh8f2cc6rr4s4anysudp7k0](https://finder.terra.money/testnet/address/terra1z3y69xas85r7egusa0c7m5sam0yk97gsztqmh8f2cc6rr4s4anysudp7k0)
+- **Terra Address:** [terra14x9fr055x5hvr48hzy2t4q7kvjvfttsvxusa4xsdcy702mnzsvuqprer8r](https://terrasco.pe/mainnet/address/terra14x9fr055x5hvr48hzy2t4q7kvjvfttsvxusa4xsdcy702mnzsvuqprer8r) (`astroport-factory` 1.8.0)
+- **Neutron Address:** [neutron1hptk0k5kng7hjy35vmh009qd5m6l33609nypgf2yc6nqnewduqasxplt4e](https://neutron.celat.one/neutron-1/contracts/neutron1hptk0k5kng7hjy35vmh009qd5m6l33609nypgf2yc6nqnewduqasxplt4e) (`astroport-factory` 1.9.0)
 - **Contract Repo:** https://github.com/astroport-fi/astroport-core/tree/main/contracts/factory
 - **contract.rs:** https://github.com/astroport-fi/astroport-core/blob/main/contracts/factory/src/contract.rs
 - **factory.rs:** https://github.com/astroport-fi/astroport-core/blob/main/packages/astroport/src/factory.rs
-- **Tests:** https://github.com/astroport-fi/astroport-core/blob/main/contracts/factory/tests/integration.rs
+- **Tests:** https://github.com/astroport-fi/astroport-core/tree/main/contracts/factory/tests
+
+<Admonition type="info" title="NOTE">
+This page documents the messages of `astroport-factory` 1.10.0 in astroport-core main. The deployed factories are 1.8.0 (Terra) and 1.9.0 (Neutron). The 1.10.0 migration from 1.8/1.9 adds the `whitelist` field of [`PairConfig`](#pairconfig); the deployed factories don't have it. The `generator_address` field keeps its old name but holds the [Incentives](./tokenomics/incentives.mdx) contract address.
+</Admonition>
 
 ## InstantiateMsg
 
+Initializes the factory with the pool types it can create, the Maker (`fee_address`), the Incentives contract, the coin registry and the owner.
+
 <CH.Section>
-
-The instantiation message takes in the token code ID for the token type supported on Astroport. It also takes in the `fee_address` that collects fees for governance, the contract `owner`, the Generator contract address and the initial pair types available to create.
-
-
 <CH.Code>
 
 ```json json
 {
-    "pair_configs:": [{
-        "code_id": 123, 
-        "pair_type": {
-            "xyk": {}
-        }, 
-        "total_fee_bps": 100, 
-        "maker_fee_bps": 10,
-        "is_disabled": false, 
-        "is_generator_disabled": false
-    }], 
-    "token_code_id": 123, 
-    "fee_address": "...", 
-    "generator_address": "terra...", 
-    "owner": "terra...", 
-    "whitelist_code_id": 123
+  "pair_configs": [
+    {
+      "code_id": 123,
+      "pair_type": {
+        "xyk": {}
+      },
+      "total_fee_bps": 30,
+      "maker_fee_bps": 3333,
+      "is_disabled": false,
+      "is_generator_disabled": false,
+      "permissioned": false
+    }
+  ],
+  "token_code_id": 69,
+  "fee_address": "terra1ygcvxp9s054q8u2q4hvl52ke393zvgj0sllahlycm4mj8dm96zjsa45rzk",
+  "generator_address": "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
+  "owner": "terra1k9j8rcyk87v5jvfla2m9wp200azegjz0eshl7n2pwv852a7ssceqsnn7pq",
+  "whitelist_code_id": 70,
+  "coin_registry_address": "terra1zuf8fla02926nhpfvk09k2pg6qv9aayflp0qt4a0msppu2h4exqs6af275",
+  "tracker_config": {
+    "code_id": 123,
+    "token_factory_addr": "terra1..."
+  }
 }
 ```
 
@@ -55,39 +81,45 @@ pub struct InstantiateMsg {
     pub generator_address: Option<String>,
     pub owner: String,
     pub whitelist_code_id: u64,
+    pub coin_registry_address: String,
+    pub tracker_config: Option<TrackerConfig>,
 }
 ```
 
 </CH.Code>
 
-| **Params**      | **Type** | **Description** |
+| **Params** | **Type** | **Description** |
 | ----------- | ----------- | ----------- |
-| [`pair_configs`](focus://json#2:11)   | [`Vec<PairConfig>`](#pairconfig)        | IDs of contracts that are allowed to instantiate pairs      |
-| [`token_code_id`](focus://json#12)   | `u64`        | CW20 token contract code identifier        |
-| [`fee_address`](focus://json#13)      | `Option<String>`       | Contract address to send governance fees to (the Maker)       |
-| [`generator_address`](focus://json#14)   | `Option<String>`        | Address of contract that is used to auto_stake LP tokens once someone provides liquidity in a pool      |
-| [`owner`](focus://json#15)   | `String`        | Address of owner that is allowed to change factory contract parameters        |
-| [`whitelist_code_id`](focus://json#16)   | `u64`        | CW1 whitelist contract code id used to store 3rd party rewards for staking Astroport LP tokens      |
+| [`pair_configs`](focus://json#2:14) | [`Vec<PairConfig>`](#pairconfig) | The pool types the factory can create |
+| [`token_code_id`](focus://json#15) | `u64` | CW20 token code ID, used by pool versions that issue a CW20 LP token |
+| [`fee_address`](focus://json#16) | `Option<String>` | The Maker contract, which receives the Maker share of swap fees |
+| [`generator_address`](focus://json#17) | `Option<String>` | The Incentives contract. Pools stake LP tokens there when `auto_stake` is set, and `deregister` deactivates the pool there |
+| [`owner`](focus://json#18) | `String` | Address allowed to change the factory configuration |
+| [`whitelist_code_id`](focus://json#19) | `u64` | CW1 whitelist code ID, used to store third-party staking rewards |
+| [`coin_registry_address`](focus://json#20) | `String` | The native coin registry, which stores the decimals of native denoms |
+| [`tracker_config`](focus://json#21:24) | `Option<TrackerConfig>` | Code ID of the tokenfactory tracker and the tokenfactory module address, for pools that track LP balances |
 
 </CH.Section>
 
 #### `PairConfig`
 
-This struct stores a pair type's configuration.
+The configuration of a pool type.
 
 <CH.Section>
 <CH.Code>
 
 ```json json
 {
-    "code_id": 123, 
-    "pair_type": {
-        "xyk": {}
-    }, 
-    "total_fee_bps": 100, 
-    "maker_fee_bps": 10,
-    "is_disabled": false, 
-    "is_generator_disabled": false
+  "code_id": 123,
+  "pair_type": {
+    "xyk": {}
+  },
+  "total_fee_bps": 30,
+  "maker_fee_bps": 3333,
+  "is_disabled": false,
+  "is_generator_disabled": false,
+  "permissioned": false,
+  "whitelist": null
 }
 ```
 
@@ -98,32 +130,38 @@ pub struct PairConfig {
     pub pair_type: PairType,
     pub total_fee_bps: u16,
     pub maker_fee_bps: u16,
+    #[serde(default)]
     pub is_disabled: bool,
+    #[serde(default)]
     pub is_generator_disabled: bool,
+    #[serde(default)]
+    pub permissioned: bool,
+    #[serde(default)]
+    pub whitelist: Option<Vec<String>>,
 }
 ```
 
 </CH.Code>
 
-| **Params**      | **Type** | **Description** |
+| **Params** | **Type** | **Description** |
 | ----------- | ----------- | ----------- |
-| [`code_id`](focus://json#2)   | `u64`        | ID of contract which is allowed to create pairs of this type        |
-| [`pair_type`](focus://json#3:5)      | [`PairType`](#pairtype)       | The pair type (provided in a [`PairType`])       |
-| [`total_fee_bps`](focus://json#6)   | `u16`        | The total fees (in bps) charged by a pair of this type        |
-| [`maker_fee_bps`](focus://json#7)   | `u16`        | The amount of fees (in bps) collected by the Maker contract from this pair type      |
-| [`is_disabled`](focus://json#8)   | `bool`        | Whether a pair type is disabled or not. If it is disabled, new pairs cannot be created, but existing ones can still read the pair configuration      |
-| [`is_generator_disabled`](focus://json#9)   | `bool`        | Setting this to true means that pairs of this type will not be able to get an ASTRO generator      |
+| [`code_id`](focus://json#2) | `u64` | Code ID used to instantiate pools of this type |
+| [`pair_type`](focus://json#3:5) | [`PairType`](#pairtype) | The pool type |
+| [`total_fee_bps`](focus://json#6) | `u16` | Total swap fee in basis points (at most 10,000). Pool types with their own fee model, such as PCL, set fees in the pool parameters instead |
+| [`maker_fee_bps`](focus://json#7) | `u16` | Share of the swap fee sent to the Maker, in basis points of the fee (10,000 = 100%) |
+| [`is_disabled`](focus://json#8) | `bool` | If true, no new pools of this type can be created. Existing pools keep working |
+| [`is_generator_disabled`](focus://json#9) | `bool` | If true, pools of this type can't be incentivized in the Incentives contract |
+| [`permissioned`](focus://json#10) | `bool` | If true, only the owner (or, from 1.10.0, an address in `whitelist`) can create pools of this type |
+| [`whitelist`](focus://json#11) | `Option<Vec<String>>` | 1.10.0 only. Addresses allowed to create pools of a permissioned type |
 
 </CH.Section>
 
-
 #### `PairType`
 
-This enum describes available pair types.
+The pool type, as stored in pair configs and returned by pools in [`PairInfo`](./common-types.mdx#pairinfo).
 
 <CH.Section>
 <CH.Code>
-
 
 ```rust factory.rs
 #[cw_serde]
@@ -136,11 +174,40 @@ pub enum PairType {
 
 </CH.Code>
 
-| **Variants**      | **Description** |
+| **Variants** | **Description** |
 | ----------- | ----------- |
-| [`Xyk`](focus://factory.rs#3)    | XYK pair type        |
-| [`Stable`](focus://factory.rs#4)      | Stable pair type       |
-| [`Custom`](focus://factory.rs#5)   | Custom pair type        |
+| `xyk` | Constant product pool: `{"xyk": {}}` |
+| `stable` | Stableswap pool: `{"stable": {}}` |
+| `custom` | Any other type, named by a string, for example `{"custom": "concentrated"}` |
+
+</CH.Section>
+
+#### `TrackerConfig`
+
+<CH.Section>
+<CH.Code>
+
+```json json
+{
+  "code_id": 123,
+  "token_factory_addr": "terra1..."
+}
+```
+
+```rust factory.rs
+#[cw_serde]
+pub struct TrackerConfig {
+    pub code_id: u64,
+    pub token_factory_addr: String,
+}
+```
+
+</CH.Code>
+
+| **Params** | **Type** | **Description** |
+| ----------- | ----------- | ----------- |
+| [`code_id`](focus://json#2) | `u64` | Code ID of the tokenfactory tracker contract |
+| [`token_factory_addr`](focus://json#3) | `String` | The tokenfactory module address |
 
 </CH.Section>
 
@@ -148,7 +215,7 @@ pub enum PairType {
 
 ### `update_config`
 
-Updates contract variables, namely the code ID of the token implementation used in Astroport, the address that receives governance fees and the Generator contract address.
+Updates the factory configuration. Only the owner can call it. Every field is optional; omitted fields are unchanged.
 
 <CH.Section>
 <CH.Code>
@@ -156,140 +223,117 @@ Updates contract variables, namely the code ID of the token implementation used 
 ```json json
 {
   "update_config": {
-    "token_code_id": 123,
-    "fee_address": "terra...",
-    "generator_address": "terra...", 
-    "whitelist_code_id": 123
+    "token_code_id": 69,
+    "fee_address": "terra1ygcvxp9s054q8u2q4hvl52ke393zvgj0sllahlycm4mj8dm96zjsa45rzk",
+    "generator_address": "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
+    "whitelist_code_id": 70,
+    "coin_registry_address": "terra1zuf8fla02926nhpfvk09k2pg6qv9aayflp0qt4a0msppu2h4exqs6af275"
   }
 }
 ```
 
-```rust factory.rs focus=1:7,27
-#[cw_serde]
-pub enum ExecuteMsg {
-    UpdateConfig {
-        token_code_id: Option<u64>,
-        fee_address: Option<String>,
-        generator_address: Option<String>,
-        whitelist_code_id: Option<u64>,
-    },
-    UpdatePairConfig {
-        config: PairConfig,
-    },
-    CreatePair {
-        pair_type: PairType,
-        asset_infos: Vec<AssetInfo>,
-        init_params: Option<Binary>,
-    },
-    Deregister {
-        asset_infos: Vec<AssetInfo>,
-    },
-    ProposeNewOwner {
-        owner: String,
-        expires_in: u64,
-    },
-    DropOwnershipProposal {},
-    ClaimOwnership {},
-    MarkAsMigrated { pairs: Vec<String> },
-}
+```rust factory.rs
+UpdateConfig {
+    token_code_id: Option<u64>,
+    fee_address: Option<String>,
+    generator_address: Option<String>,
+    whitelist_code_id: Option<u64>,
+    coin_registry_address: Option<String>,
+},
 ```
 
 </CH.Code>
 
-
-| **Params**      | **Type** | **Description** |
+| **Params** | **Type** | **Description** |
 | ----------- | ----------- | ----------- |
-| [`token_code_id`](focus://json#3)   | `u64`        | CW20 token contract code identifier        |
-| [`fee_address`](focus://json#4)      | `Option<String>`       | Contract address to send governance fees to (the Maker)       |
-| [`generator_address`](focus://json#5)   | `Option<String>`        | Address of contract that is used to auto_stake LP tokens once someone provides liquidity in a pool      |
-| [`whitelist_code_id`](focus://json#6)   | `u64`        | CW1 whitelist contract code id used to store 3rd party rewards for staking Astroport LP tokens      |
+| [`token_code_id`](focus://json#3) | `Option<u64>` | CW20 token code ID |
+| [`fee_address`](focus://json#4) | `Option<String>` | The Maker contract |
+| [`generator_address`](focus://json#5) | `Option<String>` | The Incentives contract |
+| [`whitelist_code_id`](focus://json#6) | `Option<u64>` | CW1 whitelist code ID |
+| [`coin_registry_address`](focus://json#7) | `Option<String>` | The native coin registry |
+
+</CH.Section>
+
+### `update_tracker_config`
+
+Sets the tokenfactory tracker code ID. Only the owner can call it. `token_factory_addr` is required the first time and ignored afterwards.
+
+<CH.Section>
+<CH.Code>
+
+```json json
+{
+  "update_tracker_config": {
+    "tracker_code_id": 123,
+    "token_factory_addr": "terra1..."
+  }
+}
+```
+
+```rust factory.rs
+UpdateTrackerConfig {
+    tracker_code_id: u64,
+    token_factory_addr: Option<String>,
+},
+```
+
+</CH.Code>
+
+| **Params** | **Type** | **Description** |
+| ----------- | ----------- | ----------- |
+| [`tracker_code_id`](focus://json#3) | `u64` | Code ID of the tokenfactory tracker contract |
+| [`token_factory_addr`](focus://json#4) | `Option<String>` | The tokenfactory module address |
 
 </CH.Section>
 
 ### `update_pair_config`
 
+Adds a pool type or replaces its configuration: code ID, fees, and whether it is disabled, can be incentivized or is permissioned. Only the owner can call it. Fee changes apply to existing pools of the type, since pools read their fees from the factory.
+
+As an example, a pool type that charges 30 bps and sends 1/3 of it to the Maker has `total_fee_bps` 30 and `maker_fee_bps` 3333: 3333 / 10,000 * 30 bps = 0.1% of each swap goes to the Maker.
+
 <CH.Section>
-
-This function can be used to:
-
-- Update the code ID used to instantiate new pairs of a specific type
-- Change the fee structure for a pair
-- Disable the pair type so no other pairs can be instantiated
-
-Note that all fields are optional.
-
-The fee structure for a pair is set up as follows:
-- `total_fee_bps` is the total amount of fees (in bps) that are charged on each swap
-- `maker_fee_bps` is the percentage of fees out of `total_fee_bps` that is sent to governance. 100% is 10,000
-
-As an example, let's say a pool charged 30bps (`total_fee_bps` is 30) and we want 1/3r of the fees to go to governance. In this case, `maker_fee_bps` should be 3333 because 3333 / 10,000 * 30 / 100 = 0.1%
-
 <CH.Code>
 
 ```json json
 {
-    "update_pair_config": {
-        "config": {
-            "code_id": 123, 
-            "pair_type": {
-                "xyk": {}
-            }, 
-            "total_fee_bps": 100, 
-            "maker_fee_bps": 10,
-            "is_disabled": false, 
-            "is_generator_disabled": false
-        }
+  "update_pair_config": {
+    "config": {
+      "code_id": 123,
+      "pair_type": {
+        "xyk": {}
+      },
+      "total_fee_bps": 30,
+      "maker_fee_bps": 3333,
+      "is_disabled": false,
+      "is_generator_disabled": false,
+      "permissioned": false
     }
+  }
 }
 ```
 
-```rust factory.rs focus=1:2,9:11,27
-#[cw_serde]
-pub enum ExecuteMsg {
-    UpdateConfig {
-        token_code_id: Option<u64>,
-        fee_address: Option<String>,
-        generator_address: Option<String>,
-        whitelist_code_id: Option<u64>,
-    },
-    UpdatePairConfig {
-        config: PairConfig,
-    },
-    CreatePair {
-        pair_type: PairType,
-        asset_infos: Vec<AssetInfo>,
-        init_params: Option<Binary>,
-    },
-    Deregister {
-        asset_infos: Vec<AssetInfo>,
-    },
-    ProposeNewOwner {
-        owner: String,
-        expires_in: u64,
-    },
-    DropOwnershipProposal {},
-    ClaimOwnership {},
-    MarkAsMigrated { pairs: Vec<String> },
-}
+```rust factory.rs
+UpdatePairConfig {
+    config: PairConfig,
+},
 ```
 
 </CH.Code>
 
-| **Params**      | **Type** | **Description** |
+| **Params** | **Type** | **Description** |
 | ----------- | ----------- | ----------- |
-| [`config`](focus://json#3:12)   | [`PairConfig`](#pairconfig)        | New [`PairConfig`] settings for a pair type        |
-
+| [`config`](focus://json#3:13) | [`PairConfig`](#pairconfig) | The new configuration of the pool type |
 
 </CH.Section>
 
 ### `create_pair`
 
+Creates a pool and registers it. Anyone can call it unless the pool type is permissioned. It fails if a pool for these assets already exists or if the type is disabled. The pool is instantiated with the factory owner as its admin. Pools mint a tokenfactory LP denom, so attach the chain's tokenfactory denom creation fee, if any, as funds; the factory passes them to the pool.
+
+Custom pool types may need extra parameters, packed in `init_params` (see each pool page).
+
 <CH.Section>
-
-Anyone can execute this function to create an Astroport pair. `CreatePair` creates both a `Pair` contract and a `LP(liquidity provider)` token contract. The account that instantiates the pair must specify the pair type they want as well as the assets for which the pool is created.
-
-Custom pool types may also need extra parameters which can be packed in `init_params`.
-
 <CH.Code>
 
 ```json json
@@ -300,130 +344,82 @@ Custom pool types may also need extra parameters which can be packed in `init_pa
     },
     "asset_infos": [
       {
-        "token": {
-          "contract_addr": "..."
+        "native_token": {
+          "denom": "uluna"
         }
       },
       {
         "native_token": {
-          "denom": "..."
+          "denom": "ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B"
         }
       }
     ],
-    "init_params": "<base64_encoded_json_string>"
+    "init_params": null
   }
 }
 ```
 
-```rust factory.rs focus=1:2,12:16,27
-#[cw_serde]
-pub enum ExecuteMsg {
-    UpdateConfig {
-        token_code_id: Option<u64>,
-        fee_address: Option<String>,
-        generator_address: Option<String>,
-        whitelist_code_id: Option<u64>,
-    },
-    UpdatePairConfig {
-        config: PairConfig,
-    },
-    CreatePair {
-        pair_type: PairType,
-        asset_infos: Vec<AssetInfo>,
-        init_params: Option<Binary>,
-    },
-    Deregister {
-        asset_infos: Vec<AssetInfo>,
-    },
-    ProposeNewOwner {
-        owner: String,
-        expires_in: u64,
-    },
-    DropOwnershipProposal {},
-    ClaimOwnership {},
-    MarkAsMigrated { pairs: Vec<String> },
-}
+```rust factory.rs
+CreatePair {
+    pair_type: PairType,
+    asset_infos: Vec<AssetInfo>,
+    init_params: Option<Binary>,
+},
 ```
 
 </CH.Code>
 
-| **Params**      | **Type** | **Description** |
+| **Params** | **Type** | **Description** |
 | ----------- | ----------- | ----------- |
-| [`pair_type`](focus://json#3:5)   | [`PairType`](#pairtype)        | The pair type (exposed in [`PairType`])        |
-| [`asset_infos`](focus://json#6:17)   | [`Vec<AssetInfo>`](./common-types#assetinfo)        | The assets to create the pool for        |
-| [`init_params`](focus://json#18)   | `Option<Binary>`        | Optional binary serialised parameters for custom pool types        |
+| [`pair_type`](focus://json#3:5) | [`PairType`](#pairtype) | The pool type |
+| [`asset_infos`](focus://json#6:17) | [`Vec<AssetInfo>`](./common-types.mdx#assetinfo) | The assets of the pool |
+| [`init_params`](focus://json#18) | `Option<Binary>` | Base64-encoded pool parameters for types that need them |
 
 </CH.Section>
 
-
 ### `deregister`
 
+Removes a pool from the registry, so a new pool (of any type) can be created for the same assets. Only the owner can call it. The factory also deactivates the pool in the Incentives contract. The pool contract itself keeps working.
+
 <CH.Section>
-
-Deregisters an already registered pair. This allows someone else to create a new pair (of any type) for the tokens that don't have a registered pair anymore. This is how pairs can be "upgraded".
-
 <CH.Code>
 
 ```json json
 {
-    "deregister": {
-        "asset_infos": [
-            {
-                "token": {
-                    "contract_addr": "..."
-                }
-            },
-            {
-                "native_token": {
-                    "denom": "..."
-                }
-            }
-        ]
-    }
+  "deregister": {
+    "asset_infos": [
+      {
+        "native_token": {
+          "denom": "uluna"
+        }
+      },
+      {
+        "native_token": {
+          "denom": "ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B"
+        }
+      }
+    ]
+  }
 }
 ```
 
-```rust factory.rs focus=1:2,17:19,27
-#[cw_serde]
-pub enum ExecuteMsg {
-    UpdateConfig {
-        token_code_id: Option<u64>,
-        fee_address: Option<String>,
-        generator_address: Option<String>,
-        whitelist_code_id: Option<u64>,
-    },
-    UpdatePairConfig {
-        config: PairConfig,
-    },
-    CreatePair {
-        pair_type: PairType,
-        asset_infos: Vec<AssetInfo>,
-        init_params: Option<Binary>,
-    },
-    Deregister {
-        asset_infos: Vec<AssetInfo>,
-    },
-    ProposeNewOwner {
-        owner: String,
-        expires_in: u64,
-    },
-    DropOwnershipProposal {},
-    ClaimOwnership {},
-    MarkAsMigrated { pairs: Vec<String> },
-}
+```rust factory.rs
+Deregister {
+    asset_infos: Vec<AssetInfo>,
+},
 ```
 
 </CH.Code>
 
-| **Params**      | **Type** | **Description** |
+| **Params** | **Type** | **Description** |
 | ----------- | ----------- | ----------- |
-| [`asset_infos`](focus://json#3:14)   | [`Vec<AssetInfo>`](./common-types#assetinfo)        | The assets for which we deregister a pool        |
+| [`asset_infos`](focus://json#3:14) | [`Vec<AssetInfo>`](./common-types.mdx#assetinfo) | The assets of the pool to deregister |
 
 </CH.Section>
 
 ### `propose_new_owner`
 
-Creates an offer to change the contract ownership. The validity period of the offer is set in the `expires_in` variable. After `expires_in` seconds pass, the proposal expires and cannot be accepted anymore.
+Creates an offer to change the factory owner. Only the owner can call it. The offer expires after `expires_in` seconds.
 
 <CH.Section>
 <CH.Code>
@@ -431,55 +427,33 @@ Creates an offer to change the contract ownership. The validity period of the of
 ```json json
 {
   "propose_new_owner": {
-    "owner": "...",
-    "expires_in": 1234567
+    "owner": "terra1...",
+    "expires_in": 604800
   }
 }
 ```
 
-```rust factory.rs focus=1:2,20:23,27
-#[cw_serde]
-pub enum ExecuteMsg {
-    UpdateConfig {
-        token_code_id: Option<u64>,
-        fee_address: Option<String>,
-        generator_address: Option<String>,
-        whitelist_code_id: Option<u64>,
-    },
-    UpdatePairConfig {
-        config: PairConfig,
-    },
-    CreatePair {
-        pair_type: PairType,
-        asset_infos: Vec<AssetInfo>,
-        init_params: Option<Binary>,
-    },
-    Deregister {
-        asset_infos: Vec<AssetInfo>,
-    },
-    ProposeNewOwner {
-        owner: String,
-        expires_in: u64,
-    },
-    DropOwnershipProposal {},
-    ClaimOwnership {},
-    MarkAsMigrated { pairs: Vec<String> },
-}
+```rust factory.rs
+ProposeNewOwner {
+    owner: String,
+    expires_in: u64,
+},
 ```
 
 </CH.Code>
 
-| **Params**      | **Type** | **Description** |
+| **Params** | **Type** | **Description** |
 | ----------- | ----------- | ----------- |
-| [`owner`](focus://json#3)   | `String`        | Newly proposed contract owner        |
-| [`expires_in`](focus://json#4)   | `u64`        | The date after which this proposal expires        |
+| [`owner`](focus://json#3) | `String` | Newly proposed owner |
+| [`expires_in`](focus://json#4) | `u64` | Seconds until the offer expires |
 
 </CH.Section>
 
 ### `drop_ownership_proposal`
 
-Removes an existing offer to change the contract owner.
+Removes an existing offer to change the owner. Only the owner can call it.
 
+<CH.Section>
 <CH.Code>
 
 ```json json
@@ -488,43 +462,19 @@ Removes an existing offer to change the contract owner.
 }
 ```
 
-```rust factory.rs focus=1:2,24,27
-#[cw_serde]
-pub enum ExecuteMsg {
-    UpdateConfig {
-        token_code_id: Option<u64>,
-        fee_address: Option<String>,
-        generator_address: Option<String>,
-        whitelist_code_id: Option<u64>,
-    },
-    UpdatePairConfig {
-        config: PairConfig,
-    },
-    CreatePair {
-        pair_type: PairType,
-        asset_infos: Vec<AssetInfo>,
-        init_params: Option<Binary>,
-    },
-    Deregister {
-        asset_infos: Vec<AssetInfo>,
-    },
-    ProposeNewOwner {
-        owner: String,
-        expires_in: u64,
-    },
-    DropOwnershipProposal {},
-    ClaimOwnership {},
-    MarkAsMigrated { pairs: Vec<String> },
-}
+```rust factory.rs
+DropOwnershipProposal {},
 ```
 
 </CH.Code>
 
+</CH.Section>
 
 ### `claim_ownership`
 
-Used to claim contract ownership.
+Accepts an offer. Only the proposed owner can call it.
 
+<CH.Section>
 <CH.Code>
 
 ```json json
@@ -533,103 +483,19 @@ Used to claim contract ownership.
 }
 ```
 
-```rust factory.rs focus=1:2,25,27
-#[cw_serde]
-pub enum ExecuteMsg {
-    UpdateConfig {
-        token_code_id: Option<u64>,
-        fee_address: Option<String>,
-        generator_address: Option<String>,
-        whitelist_code_id: Option<u64>,
-    },
-    UpdatePairConfig {
-        config: PairConfig,
-    },
-    CreatePair {
-        pair_type: PairType,
-        asset_infos: Vec<AssetInfo>,
-        init_params: Option<Binary>,
-    },
-    Deregister {
-        asset_infos: Vec<AssetInfo>,
-    },
-    ProposeNewOwner {
-        owner: String,
-        expires_in: u64,
-    },
-    DropOwnershipProposal {},
-    ClaimOwnership {},
-    MarkAsMigrated { pairs: Vec<String> },
-}
+```rust factory.rs
+ClaimOwnership {},
 ```
 
 </CH.Code>
-
-### `mark_as_migrated`
-
-Mark pairs as migrated.
-
-<CH.Section>
-<CH.Code>
-
-```json json 
-{
-    "mask_as_migrated": {
-        "pairs": [
-            "terra...", 
-            "terra..."
-        ]
-    }
-}
-```
-
-```rust factory.rs focus=1:2,26:27
-#[cw_serde]
-pub enum ExecuteMsg {
-    UpdateConfig {
-        token_code_id: Option<u64>,
-        fee_address: Option<String>,
-        generator_address: Option<String>,
-        whitelist_code_id: Option<u64>,
-    },
-    UpdatePairConfig {
-        config: PairConfig,
-    },
-    CreatePair {
-        pair_type: PairType,
-        asset_infos: Vec<AssetInfo>,
-        init_params: Option<Binary>,
-    },
-    Deregister {
-        asset_infos: Vec<AssetInfo>,
-    },
-    ProposeNewOwner {
-        owner: String,
-        expires_in: u64,
-    },
-    DropOwnershipProposal {},
-    ClaimOwnership {},
-    MarkAsMigrated { pairs: Vec<String> },
-}
-```
-
-</CH.Code>
-
-
-| **Params**      | **Type** | **Description** |
-| ----------- | ----------- | ----------- |
-| [`pairs`](focus://json#3:6)   | `Vec<String>`        | Migrated pairs        |
 
 </CH.Section>
 
-
 ## QueryMsg
-
-All query messages are described below. A custom struct is defined for each query response.
 
 ### `config`
 
-Queries general factory parameters (owner, token code ID, pair type configurations).
+Returns the factory configuration.
 
 <CH.Section>
 <CH.Code>
@@ -640,69 +506,54 @@ Queries general factory parameters (owner, token code ID, pair type configuratio
 }
 ```
 
-```rust factory.rs focus=1:5,23
-#[cw_serde]
-#[derive(QueryResponses)]
-pub enum QueryMsg {
-    #[returns(ConfigResponse)]
-    Config {},
-    #[returns(PairInfo)]
-    Pair {
-        asset_infos: Vec<AssetInfo>,
-    },
-    #[returns(PairsResponse)]
-    Pairs {
-        start_after: Option<Vec<AssetInfo>>,
-        limit: Option<u32>,
-    },
-    #[returns(FeeInfoResponse)]
-    FeeInfo {
-        pair_type: PairType,
-    },
-    #[returns(Vec<PairType>)]
-    BlacklistedPairTypes {},
-    #[returns(Vec<Addr>)]
-    PairsToMigrate {},
-}
+```rust factory.rs
+#[returns(ConfigResponse)]
+Config {},
 ```
 
 </CH.Code>
+
 </CH.Section>
 
 #### `ConfigResponse`
+
+Example from the Terra factory (pair configs shortened).
 
 <CH.Section>
 <CH.Code>
 
 ```json json
 {
-    "owner": "terra...", 
-    "pair_configs": [
-        {
-            "code_id": 428, 
-            "pair_type": {
-                "stable": {}
-            },
-            "total_fee_bps": 5, 
-            "maker_fee_bps": 5000, 
-            "is_disabled": false, 
-            "is_generator_disabled": false
-        }, 
-        {
-            "code_id": 392, 
-            "pair_type": {
-                "xyk": {}
-            },
-            "total_fee_bps": 30, 
-            "maker_fee_bps": 3333, 
-            "is_disabled": false, 
-            "is_generator_disabled": false
-        }
-    ],
-    "token_code_id": 123, 
-    "fee_address": "terra...", 
-    "generator_address": "terra...", 
-    "whitelist_code_id": 123
+  "owner": "terra1k9j8rcyk87v5jvfla2m9wp200azegjz0eshl7n2pwv852a7ssceqsnn7pq",
+  "pair_configs": [
+    {
+      "code_id": 123,
+      "pair_type": {
+        "stable": {}
+      },
+      "total_fee_bps": 5,
+      "maker_fee_bps": 5000,
+      "is_disabled": false,
+      "is_generator_disabled": false,
+      "permissioned": false
+    },
+    {
+      "code_id": 123,
+      "pair_type": {
+        "xyk": {}
+      },
+      "total_fee_bps": 30,
+      "maker_fee_bps": 3333,
+      "is_disabled": false,
+      "is_generator_disabled": false,
+      "permissioned": false
+    }
+  ],
+  "token_code_id": 69,
+  "fee_address": "terra1ygcvxp9s054q8u2q4hvl52ke393zvgj0sllahlycm4mj8dm96zjsa45rzk",
+  "generator_address": "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
+  "whitelist_code_id": 70,
+  "coin_registry_address": "terra1zuf8fla02926nhpfvk09k2pg6qv9aayflp0qt4a0msppu2h4exqs6af275"
 }
 ```
 
@@ -715,147 +566,106 @@ pub struct ConfigResponse {
     pub fee_address: Option<Addr>,
     pub generator_address: Option<Addr>,
     pub whitelist_code_id: u64,
+    pub coin_registry_address: Addr,
 }
 ```
 
 </CH.Code>
 
-| **Params**      | **Type** | **Description** |
+| **Params** | **Type** | **Description** |
 | ----------- | ----------- | ----------- |
-| [`owner`](focus://json#2)   | `Addr`        | Addres of owner that is allowed to change contract parameters        |
-| [`pair_configs`](focus://json#3:24)   | [`Vec<PairConfig>`](#pairconfig)        | IDs of contracts which are allowed to create pairs        |
-| [`token_code_id`](focus://json#25)   | `u64`        | CW20 token contract code identifier        |
-| [`fee_address`](focus://json#26)   | `Option<Addr>`        | Address of contract to send governance fees to (the Maker)        |
-| [`generator_address`](focus://json#27)   | `Option<Addr>`        | Address of contract used to auto_stake LP tokens for Astroport pairs that are incentivized        |
-| [`whitelist_code_id`](focus://json#28)   | `u64`        | CW1 whitelist contract code id used to store 3rd party rewards for staking Astroport LP tokens        |
-
+| [`owner`](focus://json#2) | `Addr` | The factory owner |
+| [`pair_configs`](focus://json#3:26) | [`Vec<PairConfig>`](#pairconfig) | The configured pool types |
+| [`token_code_id`](focus://json#27) | `u64` | CW20 token code ID |
+| [`fee_address`](focus://json#28) | `Option<Addr>` | The Maker contract |
+| [`generator_address`](focus://json#29) | `Option<Addr>` | The Incentives contract |
+| [`whitelist_code_id`](focus://json#30) | `u64` | CW1 whitelist code ID |
+| [`coin_registry_address`](focus://json#31) | `Addr` | The native coin registry |
 
 </CH.Section>
-
 
 ### `pair`
 
-Queries information about a specific pair.
+Returns the [`PairInfo`](./common-types.mdx#pairinfo) of the registered pool for the given assets.
 
 <CH.Section>
 <CH.Code>
 
 ```json json
 {
-    "pair": {
-        "asset_infos": [
-            {
-                "token": {
-                    "contract_addr": "..."
-                }
-            },
-            {
-                "native_token": {
-                    "denom": "..."
-                }
-            }
-        ]
-    }
+  "pair": {
+    "asset_infos": [
+      {
+        "native_token": {
+          "denom": "uluna"
+        }
+      },
+      {
+        "native_token": {
+          "denom": "ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B"
+        }
+      }
+    ]
+  }
 }
 ```
 
-```rust factory.rs focus=1:3,6:9,23
-#[cw_serde]
-#[derive(QueryResponses)]
-pub enum QueryMsg {
-    #[returns(ConfigResponse)]
-    Config {},
-    #[returns(PairInfo)]
-    Pair {
-        asset_infos: Vec<AssetInfo>,
-    },
-    #[returns(PairsResponse)]
-    Pairs {
-        start_after: Option<Vec<AssetInfo>>,
-        limit: Option<u32>,
-    },
-    #[returns(FeeInfoResponse)]
-    FeeInfo {
-        pair_type: PairType,
-    },
-    #[returns(Vec<PairType>)]
-    BlacklistedPairTypes {},
-    #[returns(Vec<Addr>)]
-    PairsToMigrate {},
-}
+```rust factory.rs
+#[returns(PairInfo)]
+Pair {
+    asset_infos: Vec<AssetInfo>,
+},
 ```
 
 </CH.Code>
 
-| **Params**      | **Type** | **Description** |
+| **Params** | **Type** | **Description** |
 | ----------- | ----------- | ----------- |
-| [`asset_infos`](focus://json#3:14)   | [`Vec<AssetInfo>`](./common-types#assetinfo)        | The assets in the pair        |
+| [`asset_infos`](focus://json#3:14) | [`Vec<AssetInfo>`](./common-types.mdx#assetinfo) | The assets of the pool |
 
 </CH.Section>
 
-Returns a [`PairInfo`](./common-types#pairinfo) response  struct.
-
-
 ### `pairs`
 
-Queries information about multiple pairs (the result is paginated). The function starts returning pair information starting after the pair `start_after`. The function returns maximum `limit` pairs.
+Returns registered pools, paginated. Results start after the pool whose assets are `start_after`. `limit` defaults to 10 and is capped at 30.
 
 <CH.Section>
 <CH.Code>
 
 ```json json
 {
-    "pairs": {
-        "start_after": [
-            {
-                "token": {
-                    "contract_addr": "..."
-                }
-            }, 
-            {
-                "native_token": {
-                    "denom": "..."
-                }
-            }
-        ], 
-        "limit": 10
-    }
+  "pairs": {
+    "start_after": [
+      {
+        "native_token": {
+          "denom": "uluna"
+        }
+      },
+      {
+        "native_token": {
+          "denom": "ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B"
+        }
+      }
+    ],
+    "limit": 30
+  }
 }
 ```
 
-
-```rust factory.rs focus=1:3,10:14,23
-#[cw_serde]
-#[derive(QueryResponses)]
-pub enum QueryMsg {
-    #[returns(ConfigResponse)]
-    Config {},
-    #[returns(PairInfo)]
-    Pair {
-        asset_infos: Vec<AssetInfo>,
-    },
-    #[returns(PairsResponse)]
-    Pairs {
-        start_after: Option<Vec<AssetInfo>>,
-        limit: Option<u32>,
-    },
-    #[returns(FeeInfoResponse)]
-    FeeInfo {
-        pair_type: PairType,
-    },
-    #[returns(Vec<PairType>)]
-    BlacklistedPairTypes {},
-    #[returns(Vec<Addr>)]
-    PairsToMigrate {},
-}
+```rust factory.rs
+#[returns(PairsResponse)]
+Pairs {
+    start_after: Option<Vec<AssetInfo>>,
+    limit: Option<u32>,
+},
 ```
 
 </CH.Code>
 
-| **Params**      | **Type** | **Description** |
+| **Params** | **Type** | **Description** |
 | ----------- | ----------- | ----------- |
-| [`start_after`](focus://json#3:14)   | [`Option<Vec<AssetInfo>>`](./common-types#assetinfo)        | The pair item to start reading from. It is an [`Option`] type that accepts [`AssetInfo`] elements        |
-| [`limit`](focus://json#15)   | `Option<u32>`        | The number of pairs to read and return. It is an [`Option`] type        |
+| [`start_after`](focus://json#3:14) | [`Option<Vec<AssetInfo>>`](./common-types.mdx#assetinfo) | The assets of the pool to start after |
+| [`limit`](focus://json#15) | `Option<u32>` | The maximum number of pools to return |
 
 </CH.Section>
 
@@ -866,29 +676,27 @@ pub enum QueryMsg {
 
 ```json json
 {
-    "pairs": [
+  "pairs": [
+    {
+      "asset_infos": [
         {
-            "asset_infos": [
-                {
-                    "token": {
-                        "contract_addr": "..."
-                    }
-
-                },
-                {
-                    "native_token": {
-                        "denom": "..."
-                    }
-                }
-            ], 
-            "contract_addr": "...", 
-            "liquidity_token": "...", 
-            "pair_type": {
-                "xyk": {}
-            }
-        }, 
-        ...etc
-    ]
+          "native_token": {
+            "denom": "uluna"
+          }
+        },
+        {
+          "native_token": {
+            "denom": "ibc/E8481AD838C31D4FC12A504B10F9B4E2F830F8818D2735C2FFC707579B5FA60B"
+          }
+        }
+      ],
+      "contract_addr": "terra1...pool",
+      "liquidity_token": "factory/terra1...pool/astroport/share",
+      "pair_type": {
+        "xyk": {}
+      }
+    }
+  ]
 }
 ```
 
@@ -901,64 +709,41 @@ pub struct PairsResponse {
 
 </CH.Code>
 
-| **Params**      | **Type** | **Description** |
+| **Params** | **Type** | **Description** |
 | ----------- | ----------- | ----------- |
-| [`pairs`](focus://json#2:24)   | [`Vec<PairInfo>`](./common-types#pairinfo)        | Arrays of structs containing information about multiple pairs        |
+| [`pairs`](focus://json#2:22) | [`Vec<PairInfo>`](./common-types.mdx#pairinfo) | The pools |
 
 </CH.Section>
 
-
-
-
-
 ### `fee_info`
 
-Queries fee information for a specific pair type (`total_fee_bps` and `maker_fee_bps`).
+Returns the fee configuration of a pool type.
 
 <CH.Section>
 <CH.Code>
 
 ```json json
 {
-    "fee_info": {
-        "pair_type": {
-            "xyk": {}
-        }
+  "fee_info": {
+    "pair_type": {
+      "xyk": {}
     }
+  }
 }
 ```
 
-```rust factory.rs focus=1:3,15:18,23
-#[cw_serde]
-#[derive(QueryResponses)]
-pub enum QueryMsg {
-    #[returns(ConfigResponse)]
-    Config {},
-    #[returns(PairInfo)]
-    Pair {
-        asset_infos: Vec<AssetInfo>,
-    },
-    #[returns(PairsResponse)]
-    Pairs {
-        start_after: Option<Vec<AssetInfo>>,
-        limit: Option<u32>,
-    },
-    #[returns(FeeInfoResponse)]
-    FeeInfo {
-        pair_type: PairType,
-    },
-    #[returns(Vec<PairType>)]
-    BlacklistedPairTypes {},
-    #[returns(Vec<Addr>)]
-    PairsToMigrate {},
-}
+```rust factory.rs
+#[returns(FeeInfoResponse)]
+FeeInfo {
+    pair_type: PairType,
+},
 ```
 
 </CH.Code>
 
-| **Params**      | **Type** | **Description** |
+| **Params** | **Type** | **Description** |
 | ----------- | ----------- | ----------- |
-| [`pair_type`](focus://json#3:5)   | [`PairType`](./factory#pairtype)        | The pair type for which we return fee information. Pair type is a [`PairType`] struct        |
+| [`pair_type`](focus://json#3:5) | [`PairType`](#pairtype) | The pool type |
 
 </CH.Section>
 
@@ -969,9 +754,9 @@ pub enum QueryMsg {
 
 ```json json
 {
-    "fee_address": "...", 
-    "total_fee_bps": 123, 
-    "maker_fee_bps": 123
+  "fee_address": "terra1ygcvxp9s054q8u2q4hvl52ke393zvgj0sllahlycm4mj8dm96zjsa45rzk",
+  "total_fee_bps": 30,
+  "maker_fee_bps": 3333
 }
 ```
 
@@ -986,18 +771,19 @@ pub struct FeeInfoResponse {
 
 </CH.Code>
 
-| **Params**      | **Type** | **Description** |
+| **Params** | **Type** | **Description** |
 | ----------- | ----------- | ----------- |
-| [`fee_address`](focus://json#2)   | `Option<Addr>`        | Contract address to send governance fees to        |
-| [`total_fee_bps`](focus://json#3)   | `u16`        | Total amount of fees (in bps) charged on a swap        |
-| [`maker_fee_bps`](focus://json#4)   | `u16`        | Amount of fees (in bps) sent to the Maker contract        |
+| [`fee_address`](focus://json#2) | `Option<Addr>` | The Maker contract |
+| [`total_fee_bps`](focus://json#3) | `u16` | Total swap fee in basis points |
+| [`maker_fee_bps`](focus://json#4) | `u16` | Share of the swap fee sent to the Maker, in basis points of the fee |
 
 </CH.Section>
 
 ### `blacklisted_pair_types`
 
-Returns a vector that contains blacklisted pair types.
+Returns the pool types that are disabled or can't be incentivized, as a [`Vec<PairType>`](#pairtype).
 
+<CH.Section>
 <CH.Code>
 
 ```json json
@@ -1006,77 +792,33 @@ Returns a vector that contains blacklisted pair types.
 }
 ```
 
-```rust factory.rs focus=1:3,19:20,23
-#[cw_serde]
-#[derive(QueryResponses)]
-pub enum QueryMsg {
-    #[returns(ConfigResponse)]
-    Config {},
-    #[returns(PairInfo)]
-    Pair {
-        asset_infos: Vec<AssetInfo>,
-    },
-    #[returns(PairsResponse)]
-    Pairs {
-        start_after: Option<Vec<AssetInfo>>,
-        limit: Option<u32>,
-    },
-    #[returns(FeeInfoResponse)]
-    FeeInfo {
-        pair_type: PairType,
-    },
-    #[returns(Vec<PairType>)]
-    BlacklistedPairTypes {},
-    #[returns(Vec<Addr>)]
-    PairsToMigrate {},
-}
+```rust factory.rs
+#[returns(Vec<PairType>)]
+BlacklistedPairTypes {},
 ```
 
 </CH.Code>
 
-`blacklisted_pair_types` returns a [`Vec<PairType>`](#pairtype) 
+</CH.Section>
 
-### `pairs_to_migrate`
+### `tracker_config`
 
-Returns a vector that contains pair addresses that are not migrated.
+Returns the [`TrackerConfig`](#trackerconfig). Fails if none is set.
 
 <CH.Section>
 <CH.Code>
 
 ```json json
 {
-  "pairs_to_migrate": {}
+  "tracker_config": {}
 }
 ```
 
-```rust factory.rs focus=1:3,21:23
-#[cw_serde]
-#[derive(QueryResponses)]
-pub enum QueryMsg {
-    #[returns(ConfigResponse)]
-    Config {},
-    #[returns(PairInfo)]
-    Pair {
-        asset_infos: Vec<AssetInfo>,
-    },
-    #[returns(PairsResponse)]
-    Pairs {
-        start_after: Option<Vec<AssetInfo>>,
-        limit: Option<u32>,
-    },
-    #[returns(FeeInfoResponse)]
-    FeeInfo {
-        pair_type: PairType,
-    },
-    #[returns(Vec<PairType>)]
-    BlacklistedPairTypes {},
-    #[returns(Vec<Addr>)]
-    PairsToMigrate {},
-}
+```rust factory.rs
+#[returns(TrackerConfig)]
+TrackerConfig {},
 ```
 
 </CH.Code>
+
 </CH.Section>
-
-
-

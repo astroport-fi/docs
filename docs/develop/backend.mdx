@@ -4,28 +4,40 @@ sidebar_position: 4
 
 # Backend
 
-## APY Calculation
+## APR and APY Calculation
 
-### Assumptions
+This section describes how pool yields are computed: from swap fees and from incentive rewards. There are no ASTRO emissions any more, so they are not part of the calculation.
 
-We assume `4,656,810` blocks/year ~= `12,758` blocks per day.
+### Swap Fee Returns
 
-The axlUSDC value of an Astroport swap is calculated at the time of Terra chain indexing, which is usually less than 1 min behind realtime.
+Swap events from Astroport pools are summed over the last 24 hours to get the pool's 24h volume, valued in USD at the time of each swap. The 24h volume is multiplied by the share of the swap fee that stays with liquidity providers to get 24h LP fees. Multiplying by 365 and dividing by the pool's liquidity gives the fee APR.
 
-### Swap Fee Returns 
+The LP share of the fee is the pool's total fee minus the Maker's share:
 
-Chain indexing is done block by block, listening for "swap" transactions on Astroport contracts. The swap results are summed up over `12,758` blocks to get 24h volume.  The result is then multiplied by the amount of fees that go to LPs (.2% for xyk, .025% for stableswap) to get 24h fees, then multiply by 365 and divide by the pool liquidity to get an APR value.  
+| Pool type | Total fee | Maker share | Fee kept by LPs |
+| --------- | --------- | ----------- | --------------- |
+| Constant product (xyk) | 0.30% | 33.33% | 0.20% |
+| Stableswap | 0.05% | 50% | 0.025% |
+| PCL | Dynamic (`mid_fee` to `out_fee`) | 50% | Half of the dynamic fee |
 
-From there, we calculate the APY as ***APY = ((1 + (daily fees) / (pool liquidity))^365) - 1***
+The live values are in the factory's `config` query (`pair_configs`: `total_fee_bps`, `maker_fee_bps`) and, for PCL pools, in the pool's `config`.
 
-### ASTRO and 3rd Party Rewards 
+The APY assumes daily compounding:
 
-The methodology is almost identical to the one used for swap fees, but besides ASTRO emissions, we also track when 3rd party rewards are sent to their corresponding generator proxy contract and from that point we know how many tokens to sum so we compute an APR/APY for 3rd party rewards.
+***APY = ((1 + (daily fees) / (pool liquidity))^365) - 1***
 
-### Total Rewards 
+### Incentive Rewards
 
-Total (combined) APY is calculated as:
+Incentive rewards come from external schedules in the [Incentives](/docs/develop/smart-contracts/tokenomics/incentives) contract. The Incentives `pool_info` query returns each reward token's `rps` (reward units per second for the whole pool) and `total_lp` (LP tokens staked). The reward APR for one token is:
 
-***APY = ((1 + (sum of all 24 fees and token rewards) / (pool liquidity))^365) - 1***
+***APR = (rps / 10^decimals) × 31,536,000 × (reward token price) / (value of the staked LP tokens)***
 
-More specifically, the APR is calculated by extrapolating from a 24 hour period of fees + protocol rewards, and the APY is calculated from the APR.
+`rps` is in base units of the reward token, hence the division by `10^decimals`.
+
+Rewards are paid only to staked LP tokens, so the denominator is the value of the LP tokens staked in Incentives, not the whole pool.
+
+### Total Rewards
+
+For LP tokens staked in Incentives, the total APR is the fee APR plus the reward APR of every reward token. Unstaked LP tokens earn the fee APR only. The APR is extrapolated from the last 24 hours of fees and the current reward rates, and the APY is calculated from the APR with daily compounding:
+
+***APY = (1 + APR / 365)^365 - 1***

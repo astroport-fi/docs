@@ -2,68 +2,49 @@
 sidebar_position: 8
 ---
 
+import Admonition from '@theme/Admonition'
+
 # Querying Oracle Prices
 
-## Intro
+## Overview
 
-Oracle prices can be queried from Astroport's PCL and Stableswap pool pair contracts using the "observe" function. 
+PCL and stableswap pools record the prices of recent swaps and expose them with the `observe` query. `observe` returns the price a given number of seconds ago. If there is no observation at that exact time, the pool interpolates between the observations around it, so it can answer for any point within the range of stored observations. For times after the newest observation it returns the moving average stored with the newest one.
 
-The `observe` function retrieves the price of a token for a specified period in the past. It uses stored observations and takes as input the number of seconds to look back from the current time. If an observation is not found for the exact time specified, the function interpolates the price using the nearest surrounding observations to provide an estimated price. This way, the `observe` function can return price data for any point in time within the range of stored observations.
+<Admonition type="info" title="NOTE">
 
-Here is an example of the `observe` query as a JSON object:
+Only current pool versions have `observe`. Older pools (for example PCL 1.x pools on Terra) answer with an `unknown variant observe` error. Constant product (xyk) pools don't record observations.
 
-<CH.Section>
-    <CH.Code>
+</Admonition>
 
-        ```json json
-        {
-            "observe": {
-                "seconds_ago": 3600
-            }
-        }
-        ```
+The query takes the number of seconds to look back:
 
-        ```rs pair_concentrated.rs 
-        #[cw_serde]
-        #[derive(QueryResponses)]
-        pub enum QueryMsg {
+```json
+{
+  "observe": {
+    "seconds_ago": 3600
+  }
+}
+```
 
-            // other queries
+It returns an `OracleObservation`:
 
-            #[returns(OracleObservation)]
-            Observe { seconds_ago: u64 },
-        }
-        ```
+```json
+{
+  "timestamp": 1793795229,
+  "price": "1.000060638347382797"
+}
+```
 
-    </CH.Code>
-</CH.Section>
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `timestamp` | `u64` | The time the price refers to (Unix seconds) |
+| `price` | `Decimal` | The amount of the pool's first asset traded per unit of its second asset, in base units |
 
-In this example, the query is set to look back 3600 seconds (1 hour). The query returns the price of a token in a struct of type `OracleObservation`:
-
-<CH.Section>
-<CH.Code>
-
-        ```json json
-        {
-            "timestamp": 12345, 
-            "price": "1.23"
-        }
-        ```
-
-        ```rust observation.rs
-        #[cw_serde]
-        pub struct OracleObservation {
-            pub timestamp: u64,
-            pub price: Decimal,
-        }
-        ```
-
-    </CH.Code>
-</CH.Section>
+The asset order is the order in the pool's `pair` query (`asset_infos`). The price is a ratio of base units: if the two assets have different decimals, scale it before comparing it with a display price. Very small swaps are not recorded, and providing or withdrawing liquidity doesn't change the observations.
 
 ## Executing the "Observe" Query in a Script
 
-To execute the `observe` query, we can use a script written in JavaScript that interacts with the CosmWasm network. The script connects to the network, retrieves the contract data, and logs the response.
+The script below uses CosmJS's read-only `CosmWasmClient`: it connects to the chain, queries the pool and logs the response. No wallet is needed for queries.
 
 Here's a complete script for calling the `observe` query:
 
@@ -78,7 +59,7 @@ Here's a complete script for calling the `observe` query:
 
                 // ** CONSTANTS ** // 
 
-                const rpc = "<RPC-URL>"; // testnet
+                const rpc = "https://neutron-rpc.polkachu.com"; // or https://terra-rpc.publicnode.com
                 const client = await CosmWasmClient.connect(rpc);
                 const pairContract = "<Astroport-Pair-Contract-Address>" 
 
@@ -105,7 +86,7 @@ Here's a complete script for calling the `observe` query:
     </CH.Code>
 </CH.Section>
 
-Replace `<RPC-URL>` with your network's RPC URL and `<Astroport-Pair-Contract-Address>` with the contract's address you wish to query.
+Replace `<Astroport-Pair-Contract-Address>` with the address of the pool you want to query. For Terra, use a Terra RPC endpoint (see [Network](network/network-intro)).
 
 ### Scheduling the Script
 
@@ -204,81 +185,4 @@ In this case, 0 * * * * means the cron job will run at the beginning of every ho
 
 Replace `/path-to-your-script/script.js` with the path to your script, and `/path-to-log-file/log.txt` with the path where you want the output log file to be written.
 
-After adding the line, save and close the file. The cron job is now set and will run your script once a day at the specified time. The output can be found in the specified log file.  
-
-{/* 
-
-
-
-# Migrating Oracles 
-
-## Intro
-
-In the early iterations of Astroport, the protocol provided time-weighted average price (TWAP) oracles for acquiring asset prices. This TWAP-based oracle captured the average price of tokens over a specific period, providing a snapshot of market behavior. However, with the release of Astroport 3.0.0, Astroport transitioned to a different model of price discovery for PCL and Stableswap pools, specifically utilizing Uniswap V3 style oracles, which are termed as "swaps-based" oracles below.
-
-## Understanding Swaps-Based Oracles
-
-Unlike the TWAP-based oracles, swaps-based oracles capture price only on swaps. However, it's important to note that the price won't be registered if either of the trade sizes is less than 0.001 tokens. This threshold is put in place to prevent noise from very small trades from affecting the recorded price. Also, provide and withdraw operations do not trigger a price update.
-
-## Migrating to Swaps-Based Oracles
-
-With the move towards swaps-based oracles, the method to acquire oracle prices has changed. Previously, you would have interacted with the [TWAP oracle contract](../smart-contracts/oracle) to get the oracle prices. However, as we transition towards the new system, this process is done directly within the [PCL](../smart-contracts/swap-pairs/passive-concentrated-liquidity-pools) or [Stableswap](../smart-contracts/swap-pairs/stableswap-pools) pool contracts.
-
-The [`observe`](../smart-contracts/swap-pairs/passive-concentrated-liquidity-pools#observe) query within the PCL and Stableswap pool contracts returns the oracle price. If observation was not found at exact time then it is interpolated using surrounding observations.
-
-<CH.Section>
-    <CH.Code>
-
-        ```json json
-        {
-            "observe": {
-                "seconds_ago": 3600
-            }
-        }
-        ```
-
-        ```rs pair_concentrated.rs 
-        #[cw_serde]
-        #[derive(QueryResponses)]
-        pub enum QueryMsg {
-
-            // other queries
-
-            #[returns(OracleObservation)]
-            Observe { seconds_ago: u64 },
-        }
-        ```
-
-    </CH.Code>
-</CH.Section>
-
-#### `OracleObservation` (Response)
-
-This structure is used to return an observation query response.
-
-<CH.Section>
-<CH.Code>
-
-        ```json json
-        {
-            "timestamp": 12345, 
-            "price": "1.23"
-        }
-        ```
-
-        ```rust observation.rs
-        #[cw_serde]
-        pub struct OracleObservation {
-            pub timestamp: u64,
-            pub price: Decimal,
-        }
-        ```
-
-    </CH.Code>
-
-| **Params**      | **Type** | **Description** |
-| ----------- | ----------- | ----------- |
-| [`timestamp`](focus://json#2)   | `u64` | The timestamp for returned price observations     |
-| [`price`](focus://json#3)   | `Decimal`        | The price from stored observations      |
-
-</CH.Section> */}
+After adding the line, save and close the file. The cron job now runs your script at the start of every hour and writes its output to the log file.

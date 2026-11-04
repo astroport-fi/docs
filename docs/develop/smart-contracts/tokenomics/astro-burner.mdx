@@ -1,0 +1,166 @@
+---
+sidebar_position: 2
+---
+
+# ASTRO Burner
+
+## Overview
+
+The burner removes a tokenfactory denom from supply. It burns its whole balance of the denom with tokenfactory `MsgBurn`, so the burner must be the denom's admin.
+
+Anyone can trigger a burn. Funds can reach the burner in two ways:
+
+- They are attached to `burn`. The [Maker](./maker) does this with a `deposit` leg whose `msg` is `{"burn":{}}`.
+- They are sent to the burner directly, with a later `burn` call from anyone.
+
+The burner has no message that mints or that changes the denom's admin.
+
+## How it's used
+
+On Neutron, the burner is the admin of the ASTRO denom `factory/neutron1ffus553eet978k024lmssw0czsxwr97mggyv85lpcsdkft8v9ufsz3sa07/astro`. Because the admin can only burn, minting new ASTRO is impossible in practice.
+
+- The Neutron Maker swaps 100% of its fees into ASTRO and deposits it here with `{"burn":{}}`.
+- The Terra Maker sends 25% of Terra fees, bought as ASTRO, to the Terra satellite. The satellite IBC-transfers it to the burner (`transfer_astro`, callable by anyone), and a later `burn` call burns it.
+- The Neutron Maker's seize config sends seized ASTRO here.
+- The Neutron Treasury burn on 2026-10-08 burned 302,664,416.43 ASTRO through this contract.
+
+ASTRO supply started at 1,000,000,000 and was 696,235,077.66 ASTRO on 2026-11-04. It only goes down. `total_burned` returns everything this contract has burned.
+
+## Links
+
+- **Neutron Address:** [neutron1wl7akesary9ac3h5k3mjw3lj5e93pvpwlc8xjh05aug7zgl084gq8xhjxp](https://neutron.celat.one/neutron-1/contracts/neutron1wl7akesary9ac3h5k3mjw3lj5e93pvpwlc8xjh05aug7zgl084gq8xhjxp) (`astroport-astro-burner` 1.0.0)
+- **Contract Repo:** https://github.com/astroport-fi/astroport-core/tree/main/contracts/tokenomics/astro_burner
+- **contract.rs:** https://github.com/astroport-fi/astroport-core/blob/main/contracts/tokenomics/astro_burner/src/contract.rs
+- **msg.rs:** https://github.com/astroport-fi/astroport-core/blob/main/contracts/tokenomics/astro_burner/src/msg.rs
+- **Tests:** https://github.com/astroport-fi/astroport-core/tree/main/contracts/tokenomics/astro_burner/tests
+
+## InstantiateMsg
+
+<CH.Section>
+    <CH.Code>
+
+        ```json json
+        {
+            "denom": "factory/neutron1ffus553eet978k024lmssw0czsxwr97mggyv85lpcsdkft8v9ufsz3sa07/astro"
+        }
+        ```
+
+        ```rust msg.rs
+        #[cw_serde]
+        pub struct InstantiateMsg {
+            pub denom: String,
+        }
+        ```
+
+    </CH.Code>
+
+| **Params**      | **Type** | **Description** |
+| ----------- | ----------- | ----------- |
+| [`denom`](focus://json#2)   | `String`        | The tokenfactory denom to burn. The burner must be made its admin to burn it         |
+
+</CH.Section>
+
+## ExecuteMsg
+
+### `burn`
+
+Burns the burner's whole balance of the denom, including funds attached to the call. If the call attaches any other denom, it fails. With nothing to burn, it does nothing.
+
+<CH.Section>
+    <CH.Code>
+
+        ```json json
+        {
+            "burn": {}
+        }
+        ```
+
+        ```rust msg.rs
+        #[cw_serde]
+        pub enum ExecuteMsg {
+            Burn {},
+        }
+        ```
+
+    </CH.Code>
+</CH.Section>
+
+## QueryMsg
+
+### `config`
+
+<CH.Section>
+    <CH.Code>
+
+        ```json json
+        {
+            "config": {}
+        }
+        ```
+
+        ```rust msg.rs focus=1:5,8
+        #[cw_serde]
+        #[derive(QueryResponses)]
+        pub enum QueryMsg {
+            #[returns(Config)]
+            Config {},
+            #[returns(Uint128)]
+            TotalBurned {},
+        }
+        ```
+
+    </CH.Code>
+</CH.Section>
+
+#### `Config`
+
+<CH.Section>
+    <CH.Code>
+
+        ```json json
+        {
+            "denom": "factory/neutron1ffus553eet978k024lmssw0czsxwr97mggyv85lpcsdkft8v9ufsz3sa07/astro"
+        }
+        ```
+
+        ```rust msg.rs
+        #[cw_serde]
+        pub struct Config {
+            pub denom: String,
+        }
+        ```
+
+    </CH.Code>
+
+| **Params**      | **Type** | **Description** |
+| ----------- | ----------- | ----------- |
+| [`denom`](focus://json#2)   | `String`        | The denom this burner burns         |
+
+</CH.Section>
+
+### `total_burned`
+
+Returns the total amount this contract has burned, as a `Uint128`.
+
+<CH.Section>
+    <CH.Code>
+
+        ```json json
+        {
+            "total_burned": {}
+        }
+        ```
+
+        ```rust msg.rs focus=1:3,6:8
+        #[cw_serde]
+        #[derive(QueryResponses)]
+        pub enum QueryMsg {
+            #[returns(Config)]
+            Config {},
+            #[returns(Uint128)]
+            TotalBurned {},
+        }
+        ```
+
+    </CH.Code>
+</CH.Section>

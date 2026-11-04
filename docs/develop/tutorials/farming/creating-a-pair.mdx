@@ -2,223 +2,187 @@
 sidebar_position: 1
 ---
 
+import Admonition from '@theme/Admonition'
+
 # Creating a Pair
 
 ## Overview
 
-The [`factory`](../../smart-contracts/factory) contract can create new Astroport pair contracts (and associated LP token contracts) which are tracked in a registry and used as a directory for all pairs. 
+The [Factory](/docs/develop/smart-contracts/factory) creates new pool contracts and keeps a registry of them. Anyone can create a pool for a new asset pair with `create_pair`, as long as the pool type is not permissioned or disabled. The factory registers one pool per asset pair: if a pool for the pair already exists, whatever its type, `create_pair` fails with `Pair was already created`.
 
-Currently, Astroport support's the following pool types: 
+| Chain | Factory |
+| ----- | ------- |
+| Terra | `terra14x9fr055x5hvr48hzy2t4q7kvjvfttsvxusa4xsdcy702mnzsvuqprer8r` |
+| Neutron | `neutron1hptk0k5kng7hjy35vmh009qd5m6l33609nypgf2yc6nqnewduqasxplt4e` |
 
-- Constant Product Pools
-- Stableswap Pools 
+Pool types anyone can create on both chains:
 
-Governance may decide to add custom pools that can have any implementation.
+| `pair_type` | Pool | Swap fee | Notes |
+| ----------- | ---- | -------- | ----- |
+| `{"xyk": {}}` | [Constant product](/docs/develop/smart-contracts/swap-pairs/constant-product-pools) | 0.30% | No `init_params` needed |
+| `{"stable": {}}` | [Stableswap](/docs/develop/smart-contracts/swap-pairs/stableswap-pools) | 0.05% | `init_params` with `amp` |
+| `{"custom": "concentrated"}` | [PCL](/docs/develop/smart-contracts/swap-pairs/passive-concentrated-liquidity-pools) | Dynamic, set in the pool parameters | `init_params` with the PCL parameters |
+
+On Neutron the factory also offers `{"custom": "concentrated_duality_orderbook"}`. Transmuter pools are permissioned. The live list, with fees and flags, is the factory's `config` query (`pair_configs`). The Maker's share of the swap fee goes to the protocol (see [Maker](/docs/develop/smart-contracts/tokenomics/maker)); the rest stays in the pool for liquidity providers.
+
+<Admonition type="info" title="NOTE">
+
+Stableswap and PCL pools need the decimals of every native asset in the pool. They read them from the native coin registry (Terra `terra1zuf8fla02926nhpfvk09k2pg6qv9aayflp0qt4a0msppu2h4exqs6af275`, Neutron `neutron1jzzv6r5uckwd64n6qan3suzker0kct5w565f6529zjyumfcx96kqtcswn3`). Check a denom with `{"native_token": {"denom": "..."}}`. If it isn't registered, anyone can register it with `{"register": {"native_coins": [["<denom>", 6]]}}`, sending a small amount of each listed coin with the message; the coins are returned.
+
+</Admonition>
 
 ## Constant Product Pools
 
-Creates an `xyk` pair.
+`create_pair` takes the `pair_type` and the two assets as [`AssetInfo`](/docs/develop/smart-contracts/common-types#assetinfo) values. This example creates an xyk pool for a new tokenfactory token against NTRN on Neutron:
 
-<CH.Section>
-    <CH.Scrollycoding>
-
-        ### `create_pair` 
-
-        To create an xyk pair, you need to execute a contract message pointing to the [`create_pair`](../../smart-contracts/factory#create_pair) endpoint in the [factory](../../smart-contracts/factory) contract.
-
-        `create_pair` takes in the `pair_type` (`xyk`) and a vector containing objects of type [`AssetInfo`](../../smart-contracts/common-types#assetinfo) (contract addresses or native denomenations for the pair).
-
-        ```json
-        {
-          "create_pair": {
-            "pair_type": {
-              "xyk": {}
-            }, 
-            "asset_infos": [
-              {
-                "token": {
-                  "contract_addr": astroAddress
-                }
-              }, 
-              {
-                "token": {
-                  "contract_addr": steakAddress
-                }
-              }
-            ]
-          }
+```json
+{
+  "create_pair": {
+    "pair_type": {
+      "xyk": {}
+    },
+    "asset_infos": [
+      {
+        "native_token": {
+          "denom": "factory/neutron1...creator/mytoken"
         }
-        ```
+      },
+      {
+        "native_token": {
+          "denom": "untrn"
+        }
+      }
+    ]
+  }
+}
+```
 
-        ---
+With CosmJS (see [Swapping](../trading/swapping#setup) for the client setup):
 
-        #### `feather.js` example
+```js
+const factory = "neutron1hptk0k5kng7hjy35vmh009qd5m6l33609nypgf2yc6nqnewduqasxplt4e";
 
-        For example, if you want to create a pair on Terra, you can implement this operation using [feather.js](../network/terra-2#featherjs). 
+const assetInfos = [
+  { native_token: { denom: "factory/neutron1...creator/mytoken" } },
+  { native_token: { denom: "untrn" } },
+];
 
-        ```js 
-        const factoryAddress = `terra1z3y69xas85r7egusa0c7m5sam0yk97gsztqmh8f2cc6rr4s4anysudp7k0`;
-        const astroAddress = 'terra167dsqkh2alurx997wmycw9ydkyu54gyswe3ygmrs4lwume3vmwks8ruqnv';
-        const steakAddress = 'terra1xztnx8mm7dagn4ck3dgylaqucp6h6agw83pmyc29hnplq7355trs78fkcq'
+const result = await signingClient.execute(
+  sender,
+  factory,
+  { create_pair: { pair_type: { xyk: {} }, asset_infos: assetInfos } },
+  "auto"
+);
 
-        const createPair = new MsgExecuteContract(
-          wallet.key.accAddress('terra'),
-          factoryAddress,
-          {
-            "create_pair": {
-              "pair_type": {
-                "xyk": {}
-              }, 
-              "asset_infos": [
-                {
-                  "token": {
-                    "contract_addr": astroAddress
-                  }
-                }, 
-                {
-                  "token": {
-                    "contract_addr": steakAddress
-                  }
-                }
-              ]
-            }
-          }
-        )
+console.log(result.transactionHash);
+```
 
-        let fee = new Fee(2000000, { uluna: 200000 });
-
-        // // BROADCAST TRANSACTION
-        let tx = await wallet.createAndSignTx({
-          msgs: [createPair],
-          fee,
-          chainID: 'pisco-1',
-        });
-
-        let result = await lcd.tx.broadcast(tx, 'pisco-1');
-
-        console.log(result);
-        ```
-
-
-    </CH.Scrollycoding>
-</CH.Section>
+For a CW20 asset, use `{"token": {"contract_addr": "..."}}` instead of `native_token`.
 
 ## Stableswap Pools
 
-Creates a `stable` pair.
+Stableswap pools take a base64-encoded `init_params` with the amplification `amp`:
 
-<CH.Section>
-    <CH.Scrollycoding>
-
-        ### `create_pair`
-
-        To create a stable pair, you need to execute a contract message pointing to the [`create_pair`](../../smart-contracts/factory#create_pair) endpoint in the [factory](../../smart-contracts/factory) contract like we did with `xyk` pairs above. 
-        
-        However, there are two key differences: 
-
-        -  `pair_type` is now defined as `stable: {}` 
-        - `init_params` is used to pass in a binary encoded message. In this case, additional pool parameters needed for initializing stableswap pairs such as amplitude.
-
-
-        ```json 
-        {
-          "create_pair": {
-            "pair_type": {
-              "stable": {}
-            }, 
-            "asset_infos": [
-              {
-                "token": {
-                  "contract_addr": lunaxAddress
-                }
-              }, 
-              {
-                "token": {
-                  "contract_addr": steakAddress
-                }
-              }
-            ], 
-            "init_params": toBase64(
-              {
-                "amp": 10
-              }
-            )
-          }
+```json
+{
+  "create_pair": {
+    "pair_type": {
+      "stable": {}
+    },
+    "asset_infos": [
+      {
+        "native_token": {
+          "denom": "ibc/...stable-a"
         }
-        ```
+      },
+      {
+        "native_token": {
+          "denom": "ibc/...stable-b"
+        }
+      }
+    ],
+    "init_params": "eyJhbXAiOjEwfQ=="
+  }
+}
+```
 
-        ---
+`eyJhbXAiOjEwfQ==` is the base64 encoding of `{"amp":10}`. With CosmJS, `toBinary` does the encoding:
 
-        ### Encoding our `Msg`
+```js
+import { toBinary } from "@cosmjs/cosmwasm-stargate";
 
-        To encode our message, there are two common options:
+const result = await signingClient.execute(
+  sender,
+  factory,
+  {
+    create_pair: {
+      pair_type: { stable: {} },
+      asset_infos: [
+        { native_token: { denom: "ibc/...stable-a" } },
+        { native_token: { denom: "ibc/...stable-b" } },
+      ],
+      init_params: toBinary({ amp: 10 }),
+    },
+  },
+  "auto"
+);
+```
 
-        - An [online base64 encoder](https://www.base64encode.org/)
-        - A custom function
+## PCL Pools
 
-        The code in this section uses a custom function (`toBase64`) to display our binary message - this function needs to be defined elsewhere to be used. The actual string representation of our message would be an encoded binary.
+PCL pools use `{"custom": "concentrated"}` and a base64-encoded `ConcentratedPoolParams` as `init_params` (amplification, gamma, fees, initial price scale and more). The parameters and their meaning are documented on the [PCL pool page](/docs/develop/smart-contracts/swap-pairs/passive-concentrated-liquidity-pools). Pick parameters from an existing pool with similar assets (query its `config`) unless you know what you need.
 
-        ```json focus=18:22
-        ```
+## Finding the Pool Address
 
-        ---
+After the transaction, look up the new pool with the factory's `pair` query. The order of `asset_infos` doesn't matter.
 
-        #### toBase64
+```json
+{
+  "pair": {
+    "asset_infos": [
+      {
+        "native_token": {
+          "denom": "factory/neutron1...creator/mytoken"
+        }
+      },
+      {
+        "native_token": {
+          "denom": "untrn"
+        }
+      }
+    ]
+  }
+}
+```
 
-        The code in this section is an example of using [feather.js](../network/terra-2#featherjs) to define a custom function to encode our `init_params` message.
+The response is a `PairInfo`:
 
-        ```js
-        const factoryAddress = `terra1z3y69xas85r7egusa0c7m5sam0yk97gsztqmh8f2cc6rr4s4anysudp7k0`;
-        const lunaxAddress = 'terra138fmmywk3zvqezaqwnxyv8kyr8k7q4e7latncv0xreej62u9mx0su95h7d';
-        const steakAddress = 'terra1xztnx8mm7dagn4ck3dgylaqucp6h6agw83pmyc29hnplq7355trs78fkcq'
+```json
+{
+  "asset_infos": [
+    {
+      "native_token": {
+        "denom": "factory/neutron1...creator/mytoken"
+      }
+    },
+    {
+      "native_token": {
+        "denom": "untrn"
+      }
+    }
+  ],
+  "contract_addr": "neutron1...pool",
+  "liquidity_token": "factory/neutron1...pool/astroport/share",
+  "pair_type": {
+    "xyk": {}
+  }
+}
+```
 
-        const toBase64 = (obj) => {
-          return Buffer.from(JSON.stringify(obj)).toString("base64");
-        };
+`liquidity_token` is the pool's LP token. Pools created on Neutron today mint a native tokenfactory LP token (`factory/<pool address>/astroport/share`). The pool codes the Terra factory uses mint a CW20 LP token, so `liquidity_token` is a `terra1...` contract address. Older pools on both chains may use CW20 LP tokens. The LP token type decides how you withdraw liquidity and stake in Incentives: see [Providing/Withdrawing Liquidity](providing-withdrawing-liquidity) and [Staking/Unstaking LP Tokens](staking-unstaking-lp-tokens).
 
-        const createStablePair = new MsgExecuteContract(
-          wallet.key.accAddress('terra'),
-          factoryAddress,
-          {
-            "create_pair": {
-              "pair_type": {
-                "stable": {}
-              }, 
-              "asset_infos": [
-                {
-                  "token": {
-                    "contract_addr": lunaxAddress
-                  }
-                }, 
-                {
-                  "token": {
-                    "contract_addr": steakAddress
-                  }
-                }
-              ], 
-              "init_params": toBase64(
-                {
-                  "amp": 10
-                }
-              )
-            }
-          }
-        )
+## Links
 
-
-        let fee = new Fee(2000000, { uluna: 200000 });
-
-        // // BROADCAST TRANSACTION
-        let tx = await wallet.createAndSignTx({
-          msgs: [createStablePair],
-          fee,
-          chainID: 'pisco-1',
-        });
-
-        let result = await lcd.tx.broadcast(tx, 'pisco-1');
-
-        console.log(result);
-        ```
-
-    </CH.Scrollycoding>
-</CH.Section>
+- [Factory contract](/docs/develop/smart-contracts/factory)
+- [Creating and Seeding a Pool](../creating-and-seeding-a-pool): an end-to-end CosmJS script
+- [Contract Addresses](/docs/develop/smart-contracts/contract-addresses)

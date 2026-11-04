@@ -136,26 +136,6 @@ const config = {
             },
           ],
         ],
-        id: "govern",
-        path: "docs/govern",
-        routeBasePath: "docs/govern",
-        sidebarPath: require.resolve("./sidebars.js"),
-        editUrl: "https://github.com/astroport-fi/docs/blob/master",
-      },
-    ],
-    [
-      "@docusaurus/plugin-content-docs",
-      {
-        beforeDefaultRemarkPlugins: [
-          [
-            remarkCodeHike,
-            {
-              showCopyButton: true,
-              lineNumbers: true,
-              theme,
-            },
-          ],
-        ],
         id: "develop",
         path: "docs/develop",
         routeBasePath: "docs/develop",
@@ -224,12 +204,6 @@ const config = {
             label: "Learn",
             position: "left",
             activeBaseRegex: `/learn/`,
-          },
-          {
-            to: "/docs/govern/overview", // ./docs-api/intro.md
-            label: "Govern",
-            position: "left",
-            activeBaseRegex: `/govern/`,
           },
           {
             // to: '/docs/develop/smart-contracts/astroport-contract-addresses',
