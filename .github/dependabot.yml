@@ -1,0 +1,18 @@
+version: 2
+updates:
+  # Security updates only: version updates are off (limit 0). Docusaurus 3 is a
+  # migration (React 18, MDX 3), not a security bump, so majors are ignored.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    ignore:
+      - dependency-name: "@docusaurus/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@mdx-js/react"
+        update-types: ["version-update:semver-major"]
