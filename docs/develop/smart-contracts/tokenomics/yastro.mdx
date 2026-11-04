@@ -12,7 +12,7 @@ yASTRO (`astroport-yastro` 1.0.0, Terra only) is a transferable CW20 that is als
 
 Every balance change (stake, unstake, `transfer`, `send`, `transfer_from`, `send_from`) first settles the rewards of both sides at their old balances, so rewards follow whoever holds the yASTRO, second by second, wherever the token moves: wallets, DAOs, pools.
 
-- **Stake:** attach ASTRO (Terra IBC ASTRO, `ibc/8D8A7F7253615E5F76CB6252A1E1BD921D5EDB7BBAAF8913FB1C77FF125D9995`) to `stake` and receive the same amount of yASTRO. The legacy ASTRO CW20 can't be staked; convert it first.
+- **Stake:** attach ASTRO (Terra IBC ASTRO, `ibc/8D8A7F7253615E5F76CB6252A1E1BD921D5EDB7BBAAF8913FB1C77FF125D9995`) to `stake` and receive the same amount of yASTRO. The legacy ASTRO CW20 can't be staked.
 - **Unstake:** `unstake` burns yASTRO and starts an unbonding of 7 days. Unbonding ASTRO earns nothing. `withdraw` then sends every matured unbonding. An address can have up to 30 open unbondings.
 - **Claim:** rewards are never pushed. `claim` sends the caller's accrued rewards, and `pending_rewards` shows them. In the app, this is the Rewards Center at [app.astroport.fi/yastro](https://app.astroport.fi/yastro).
 

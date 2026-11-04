@@ -23,14 +23,14 @@ ASTRO is a tokenfactory denom on Neutron. On Terra, ASTRO is the same token, tra
 
 ## Legacy ASTRO tokens
 
-ASTRO was first a CW20 token on Terra. It moved to Neutron as a tokenfactory denom, and the old tokens are converted, one way and 1:1, through converter pools (`astroport-pair-converter` 1.1.0). A converter pool holds no liquidity and charges no fee: swapping the old token in it returns new ASTRO released by the ASTRO converter contract behind it, so a conversion only goes through while that converter holds enough new ASTRO. The reverse direction isn't supported.
+ASTRO was first a CW20 token on Terra. It moved to Neutron as a tokenfactory denom, and the old tokens were converted, one way and 1:1, through converter pools (`astroport-pair-converter` 1.1.0). Conversion no longer works: the ASTRO converter contracts behind these pools hold no new ASTRO, so every conversion fails with "Insufficient ASTRO liquidity in the converter contract". The pools are listed for reference only.
 
 | Chain | Old token | Converter pool |
 | :-- | :-- | :-- |
 | Terra | ASTRO CW20 [terra1nsuqsk6kh58ulczatwev87ttq2z6r3pusulg9r24mfj2fvtzd4uq3exn26](https://terrasco.pe/mainnet/address/terra1nsuqsk6kh58ulczatwev87ttq2z6r3pusulg9r24mfj2fvtzd4uq3exn26) (`astroport-token` 1.0.0, a `cw20-base` token) | [terra1ala9d5sddzxf8jdgyd9m6s0jkwy5a724938zgwe9zmh5rwtyzzfql59par](https://terrasco.pe/mainnet/address/terra1ala9d5sddzxf8jdgyd9m6s0jkwy5a724938zgwe9zmh5rwtyzzfql59par), returns Terra IBC ASTRO |
 | Neutron | Old IBC ASTRO from Terra `ibc/5751B8BCDA688FD0A8EC0B292EEF1CDEAB4B766B63EC632778B196D317C40C3A` | [neutron12gzdev6htsfvfu9hp220w6zjmf4gruwas4hpadtekpmm666xvpcs4fqucl](https://neutron.celat.one/neutron-1/contracts/neutron12gzdev6htsfvfu9hp220w6zjmf4gruwas4hpadtekpmm666xvpcs4fqucl), returns Neutron ASTRO |
 
-The legacy ASTRO CW20 can't be staked in [yASTRO](./tokenomics/yastro); convert it first.
+The legacy ASTRO CW20 can't be staked in [yASTRO](./tokenomics/yastro).
 
 ## Links
 

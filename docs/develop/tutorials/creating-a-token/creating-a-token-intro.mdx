@@ -36,7 +36,7 @@ The commands below use Neutron. For Terra, replace `neutrond` with `terrad`, `ne
 ```bash
 neutrond tx tokenfactory create-denom mytoken \
   --from mykey --chain-id neutron-1 \
-  --node https://neutron-rpc.polkachu.com:443 \
+  --node https://neutron-rpc.polkachu.com \
   --gas auto --gas-adjustment 1.4 --gas-prices 0.0053untrn
 ```
 
@@ -49,7 +49,7 @@ Only the denom's admin can mint. The amount is in base units: with 6 decimals, `
 ```bash
 neutrond tx tokenfactory mint 1000000factory/neutron1...creator/mytoken \
   --from mykey --chain-id neutron-1 \
-  --node https://neutron-rpc.polkachu.com:443 \
+  --node https://neutron-rpc.polkachu.com \
   --gas auto --gas-adjustment 1.4 --gas-prices 0.0053untrn
 ```
 
@@ -62,7 +62,7 @@ Only the denom's admin can burn.
 ```bash
 neutrond tx tokenfactory burn 1000000factory/neutron1...creator/mytoken \
   --from mykey --chain-id neutron-1 \
-  --node https://neutron-rpc.polkachu.com:443 \
+  --node https://neutron-rpc.polkachu.com \
   --gas auto --gas-adjustment 1.4 --gas-prices 0.0053untrn
 ```
 
@@ -71,7 +71,7 @@ neutrond tx tokenfactory burn 1000000factory/neutron1...creator/mytoken \
 ```bash
 neutrond tx tokenfactory change-admin factory/neutron1...creator/mytoken neutron1...newadmin \
   --from mykey --chain-id neutron-1 \
-  --node https://neutron-rpc.polkachu.com:443 \
+  --node https://neutron-rpc.polkachu.com \
   --gas auto --gas-adjustment 1.4 --gas-prices 0.0053untrn
 ```
 

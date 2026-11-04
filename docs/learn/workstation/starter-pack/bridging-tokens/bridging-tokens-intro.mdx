@@ -8,7 +8,7 @@ Astroport runs on Terra (phoenix-1) and Neutron (neutron-1). Both are IBC-enable
 
 ASTRO is native to Neutron (`factory/neutron1ffus553eet978k024lmssw0czsxwr97mggyv85lpcsdkft8v9ufsz3sa07/astro`). On Terra, ASTRO is the IBC version of the Neutron token (`ibc/8D8A7F7253615E5F76CB6252A1E1BD921D5EDB7BBAAF8913FB1C77FF125D9995`). To move ASTRO between the two chains, send it with an IBC transfer from a wallet or interface that supports Terra and Neutron.
 
-The old ASTRO CW20 on Terra is legacy. Swap it for IBC ASTRO in the app: the swap goes through the ASTRO converter pool, which converts old ASTRO to new ASTRO with no fee (one way only).
+The old ASTRO CW20 on Terra is legacy. Converting it to IBC ASTRO no longer works.
 
 <Admonition type="info" title="yASTRO stays on Terra">
 yASTRO is a CW20 token on Terra. Don't send it over IBC: the bridge escrow would hold it and earn its rewards instead of you. Unstake it first if you want to move your ASTRO.
