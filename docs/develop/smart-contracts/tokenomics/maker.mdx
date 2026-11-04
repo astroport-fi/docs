@@ -21,7 +21,7 @@ Maker 2.x replaces 1.x's fixed splits (governance percent, second receiver, dev 
 
 ## How the Makers are configured
 
-Both Makers swap through [Router 2.0](../router), use a `max_spread` of 25%, have no collect cooldown and an empty `collectors` list, so anyone can call `collect`. Collection runs weekly, on Sunday at 23:00 and 23:30 UTC, but any address can call it at any time. No fee token route starts at ASTRO and no leg sells ASTRO: neither Maker ever sells ASTRO. The owner is the protocol owner on each chain (the Assembly on Neutron, the satellite on Terra), run by the "Astroport - Contributors" DAO. Query `config` and `routes` for the exact live values.
+Both Makers swap through [Router 2.0](../router), use a `max_spread` of 25%, have no collect cooldown and an empty `collectors` list, so anyone can call `collect`. Collection runs twice a week, on Sunday and Wednesday at 23:00 and 23:30 UTC, but any address can call it at any time. No fee token route starts at ASTRO and no leg sells ASTRO: neither Maker ever sells ASTRO. The owner is the protocol owner on each chain (the Assembly on Neutron, the satellite on Terra), run by the "Astroport - Contributors" DAO. Query `config` and `routes` for the exact live values.
 
 ### Neutron: burn only
 
