@@ -307,12 +307,6 @@ const boxProps = {
       description: "Your journey into the art of swapping begins here",
       image: AstroChadUrl,
     },
-    limitOrder: {
-      title: "Limit Orders",
-      description:
-        "Learn how to set limit orders and advance your trading skills",
-      image: SmartPepeUrl,
-    },
   },
   astralAssembly: {
     stakingUnstakingASTROxASTRO: {
@@ -969,17 +963,6 @@ export default function ContentBox(props) {
             title={boxProps.tradersPort.swap.title}
             description={boxProps.tradersPort.swap.description}
             image={boxProps.tradersPort.swap.image}
-          />
-        </a>
-
-        <a
-          className={styles.links}
-          href="../../../learn/workstation/traders-port/limit-orders"
-        >
-          <Box
-            title={boxProps.tradersPort.limitOrder.title}
-            description={boxProps.tradersPort.limitOrder.description}
-            image={boxProps.tradersPort.limitOrder.image}
           />
         </a>
       </div>
